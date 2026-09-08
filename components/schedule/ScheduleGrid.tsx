@@ -27,52 +27,78 @@ export default function ScheduleGrid({
   const [dragMode, setDragMode] = useState<"select" | "deselect">("select");
   const gridRef = useRef<HTMLDivElement>(null);
 
+  // 모바일 터치 후 브라우저 가상 마우스 이벤트(synthetic mousedown) 중복 방지 및 드래그 중복 방지용 ref
+  const lastTouchTime = useRef(0);
+  const lastHandledSlotRef = useRef<string | null>(null);
+
+  // 부모 상태 비동기 갱신 중에도 드래그 누적 선택이 정확히 유지되도록 ref 동기화
+  const selectedSlotsRef = useRef(selectedSlots);
+  useEffect(() => {
+    selectedSlotsRef.current = selectedSlots;
+  }, [selectedSlots]);
+
   const timeSlots = generateTimeSlots(startTime, endTime, slotDuration);
   const selectedSet = new Set(selectedSlots);
 
   // 셀 토글 처리 (멘토 불가 슬롯은 원천 차단)
-  const toggleSlot = useCallback((slotKey: string, targetMode?: "select" | "deselect") => {
-    if (isReadOnly) return;
-    const [day, time] = slotKey.split("T");
-    if (isMentorBlockedSlot(day, time)) return;
+  const toggleSlot = useCallback(
+    (slotKey: string, targetMode?: "select" | "deselect") => {
+      if (isReadOnly) return;
+      const [day, time] = slotKey.split("T");
+      if (isMentorBlockedSlot(day, time)) return;
 
-    const isCurrentlySelected = selectedSet.has(slotKey);
-    const mode = targetMode ?? (isCurrentlySelected ? "deselect" : "select");
+      const currentSet = new Set(selectedSlotsRef.current);
+      const isCurrentlySelected = currentSet.has(slotKey);
+      const mode = targetMode ?? (isCurrentlySelected ? "deselect" : "select");
 
-    const newSet = new Set(selectedSet);
-    if (mode === "select") {
-      newSet.add(slotKey);
-    } else {
-      newSet.delete(slotKey);
-    }
-    onChange(Array.from(newSet));
-  }, [isReadOnly, selectedSet, onChange]);
+      if (mode === "select") {
+        currentSet.add(slotKey);
+      } else {
+        currentSet.delete(slotKey);
+      }
 
-  // 마우스 드래그 시작 (PC)
+      const nextSlots = Array.from(currentSet);
+      selectedSlotsRef.current = nextSlots;
+      onChange(nextSlots);
+    },
+    [isReadOnly, onChange]
+  );
+
+  // 마우스 드래그 시작 (PC 전용: 모바일 터치 후 생성되는 가상 mousedown 무시)
   const handleMouseDown = (slotKey: string) => {
     if (isReadOnly) return;
+    if (Date.now() - lastTouchTime.current < 700) return;
+
     const [day, time] = slotKey.split("T");
     if (isMentorBlockedSlot(day, time)) return;
 
-    const mode = selectedSet.has(slotKey) ? "deselect" : "select";
+    const isCurrentlySelected = selectedSlotsRef.current.includes(slotKey);
+    const mode = isCurrentlySelected ? "deselect" : "select";
     setDragMode(mode);
     setIsDragging(true);
+    lastHandledSlotRef.current = slotKey;
     toggleSlot(slotKey, mode);
   };
 
   // 마우스 진입 (PC 드래그 중)
   const handleMouseEnter = (slotKey: string) => {
     if (!isDragging || isReadOnly) return;
+    if (Date.now() - lastTouchTime.current < 700) return;
+
     const [day, time] = slotKey.split("T");
     if (isMentorBlockedSlot(day, time)) return;
 
-    toggleSlot(slotKey, dragMode);
+    if (slotKey !== lastHandledSlotRef.current) {
+      lastHandledSlotRef.current = slotKey;
+      toggleSlot(slotKey, dragMode);
+    }
   };
 
   // 마우스 업 (전역)
   useEffect(() => {
     const handleMouseUp = () => {
       setIsDragging(false);
+      lastHandledSlotRef.current = null;
     };
     window.addEventListener("mouseup", handleMouseUp);
     return () => window.removeEventListener("mouseup", handleMouseUp);
@@ -81,23 +107,30 @@ export default function ScheduleGrid({
   // 모바일 터치 드래그 지원
   const handleTouchStart = (e: React.TouchEvent, slotKey: string) => {
     if (isReadOnly) return;
+    lastTouchTime.current = Date.now();
+
     const [day, time] = slotKey.split("T");
     if (isMentorBlockedSlot(day, time)) return;
 
-    const mode = selectedSet.has(slotKey) ? "deselect" : "select";
+    const isCurrentlySelected = selectedSlotsRef.current.includes(slotKey);
+    const mode = isCurrentlySelected ? "deselect" : "select";
     setDragMode(mode);
     setIsDragging(true);
+    lastHandledSlotRef.current = slotKey;
     toggleSlot(slotKey, mode);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging || isReadOnly) return;
+    lastTouchTime.current = Date.now();
+
     const touch = e.touches[0];
     const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
     if (targetElement) {
       const slotEl = targetElement.closest("[data-slot]");
       const slotKey = slotEl?.getAttribute("data-slot");
-      if (slotKey) {
+      if (slotKey && slotKey !== lastHandledSlotRef.current) {
+        lastHandledSlotRef.current = slotKey;
         const [day, time] = slotKey.split("T");
         if (!isMentorBlockedSlot(day, time)) {
           toggleSlot(slotKey, dragMode);
@@ -107,6 +140,8 @@ export default function ScheduleGrid({
   };
 
   const handleTouchEnd = () => {
+    lastTouchTime.current = Date.now();
+    lastHandledSlotRef.current = null;
     setIsDragging(false);
   };
 
@@ -222,7 +257,7 @@ export default function ScheduleGrid({
                         onMouseEnter={() => handleMouseEnter(slotKey)}
                         onTouchStart={(e) => handleTouchStart(e, slotKey)}
                         className={cn(
-                          "flex-1 min-w-[76px] sm:min-w-[96px] h-full border-r border-slate-200/80 last:border-r-0 border-t flex items-center justify-center select-none transition-colors duration-75",
+                          "flex-1 min-w-[76px] sm:min-w-[96px] h-full border-r border-slate-200/80 last:border-r-0 border-t flex items-center justify-center select-none transition-colors duration-75 touch-manipulation",
                           isHour ? "border-t-slate-300" : "border-t-slate-200/60",
                           isBlocked
                             ? "bg-slate-100/90 text-slate-400 cursor-not-allowed text-[10px] font-semibold"
