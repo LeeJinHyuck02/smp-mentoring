@@ -15,11 +15,15 @@ import {
   Plus,
   Share2,
   ExternalLink,
+  Users,
   CheckCircle2,
+  Sparkles,
   RefreshCw,
   MessageSquare,
   X,
   Lock,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 
 export const DEFAULT_MENTOR_ID = "00000000-0000-0000-0000-000000000001";
@@ -28,7 +32,7 @@ interface MentorDashboardProps {
   onLogout?: () => void;
 }
 
-export default function MentorDashboard({ onLogout }: MentorDashboardProps = {}) {
+export default function MentorDashboard({ onLogout }: MentorDashboardProps) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [sections, setSections] = useState<Record<string, Section[]>>({});
   const [polls, setPolls] = useState<Record<string, SchedulePoll[]>>({});
@@ -110,6 +114,37 @@ export default function MentorDashboard({ onLogout }: MentorDashboardProps = {})
       navigator.clipboard.writeText(url);
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
+
+  // 멘토링 시간 조율 ON/OFF 상태 토글
+  const handleTogglePoll = async (pollId: string, currentIsClosed: boolean) => {
+    const nextClosed = !currentIsClosed;
+
+    // 즉각적인 UI 반영 (낙관적 갱신)
+    setPolls((prev) => {
+      const nextMap = { ...prev };
+      for (const secId in nextMap) {
+        nextMap[secId] = nextMap[secId].map((p) =>
+          p.id === pollId ? { ...p, is_closed: nextClosed } : p
+        );
+      }
+      return nextMap;
+    });
+
+    try {
+      const { error } = await supabase
+        .from("schedule_polls")
+        .update({ is_closed: nextClosed })
+        .eq("id", pollId);
+
+      if (error) {
+        console.error("시간 조율 상태 변경 실패:", error);
+        loadData();
+      }
+    } catch (err) {
+      console.error("시간 조율 상태 변경 오류:", err);
+      loadData();
     }
   };
 
