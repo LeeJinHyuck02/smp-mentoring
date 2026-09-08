@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { formatTimeKorean, formatDayOrDateKorean, generateTimeSlots, cn } from "@/lib/utils";
+import { formatTimeKorean, formatDayOrDateKorean, generateTimeSlots, isMentorBlockedSlot, cn } from "@/lib/utils";
 import { ScheduleSubmission } from "@/types/database";
 import { Users, Trophy, CheckCircle, Info, Sparkles } from "lucide-react";
 
@@ -54,14 +54,17 @@ export default function ScheduleHeatmap({
     return map;
   }, [dates, timeSlots, submissions]);
 
-  // 최적의 추천 시간대 (Top 3) 계산
+  // 최적의 추천 시간대 (Top 3) 계산 (멘토 불가 시간은 원천 제외)
   const topSlots = useMemo(() => {
     if (totalCount === 0) return [];
     const scoredSlots: { slotKey: string; count: number; date: string; time: string; names: string[] }[] = [];
 
     slotMap.forEach((names, slotKey) => {
+      const [date, time] = slotKey.split("T");
+      // 월/목 13:00~18:00 등 멘토 불가 시간대는 추천에서 제외
+      if (isMentorBlockedSlot(date, time)) return;
+
       if (names.length > 0) {
-        const [date, time] = slotKey.split("T");
         scoredSlots.push({
           slotKey,
           count: names.length,
@@ -177,7 +180,11 @@ export default function ScheduleHeatmap({
           <Info className="w-3.5 h-3.5 text-slate-400" />
           <span>셀을 클릭하거나 마우스를 올리면 <strong>누가 가능한지</strong> 볼 수 있습니다.</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 mr-1.5">
+            <span className="w-3.5 h-3.5 rounded bg-slate-100 border border-slate-200 inline-block" />
+            멘토 불가
+          </span>
           <span className="text-[11px] text-slate-400">적음</span>
           <span className="w-3.5 h-3.5 rounded bg-slate-100 border border-slate-200"></span>
           <span className="w-3.5 h-3.5 rounded bg-emerald-100 border border-emerald-200"></span>
@@ -220,6 +227,20 @@ export default function ScheduleHeatmap({
 
                   {dates.map((date) => {
                     const slotKey = `${date}T${time}`;
+                    const isBlocked = isMentorBlockedSlot(date, time);
+
+                    if (isBlocked) {
+                      return (
+                        <div
+                          key={slotKey}
+                          className="flex-1 min-w-[76px] sm:min-w-[96px] h-9 mx-0.5 my-0.5 rounded border border-slate-200/80 bg-slate-100/90 text-slate-400 flex items-center justify-center cursor-not-allowed select-none text-[10px] font-semibold"
+                          title="멘토 불가능 시간 (월·목은 18시 이후 가능)"
+                        >
+                          멘토 불가
+                        </div>
+                      );
+                    }
+
                     const count = slotMap.get(slotKey)?.length || 0;
                     const isActive = activeSlot === slotKey;
                     const isConfirmed = confirmedSlot?.date === date && confirmedSlot?.start === time;

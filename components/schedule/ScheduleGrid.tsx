@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { formatTimeKorean, formatDayOrDateKorean, generateTimeSlots, cn } from "@/lib/utils";
-import { Check, Sparkles, RotateCcw, Clock } from "lucide-react";
+import { formatTimeKorean, formatDayOrDateKorean, generateTimeSlots, isMentorBlockedSlot, cn } from "@/lib/utils";
+import { Check, Sparkles, RotateCcw, Clock, Ban } from "lucide-react";
 
 interface ScheduleGridProps {
   dates: string[]; // e.g. ["2026-09-15", "2026-09-16", ...]
@@ -30,9 +30,12 @@ export default function ScheduleGrid({
   const timeSlots = generateTimeSlots(startTime, endTime, slotDuration);
   const selectedSet = new Set(selectedSlots);
 
-  // 셀 토글 처리
+  // 셀 토글 처리 (멘토 불가 슬롯은 원천 차단)
   const toggleSlot = useCallback((slotKey: string, targetMode?: "select" | "deselect") => {
     if (isReadOnly) return;
+    const [day, time] = slotKey.split("T");
+    if (isMentorBlockedSlot(day, time)) return;
+
     const isCurrentlySelected = selectedSet.has(slotKey);
     const mode = targetMode ?? (isCurrentlySelected ? "deselect" : "select");
 
@@ -48,6 +51,9 @@ export default function ScheduleGrid({
   // 마우스 드래그 시작 (PC)
   const handleMouseDown = (slotKey: string) => {
     if (isReadOnly) return;
+    const [day, time] = slotKey.split("T");
+    if (isMentorBlockedSlot(day, time)) return;
+
     const mode = selectedSet.has(slotKey) ? "deselect" : "select";
     setDragMode(mode);
     setIsDragging(true);
@@ -57,6 +63,9 @@ export default function ScheduleGrid({
   // 마우스 진입 (PC 드래그 중)
   const handleMouseEnter = (slotKey: string) => {
     if (!isDragging || isReadOnly) return;
+    const [day, time] = slotKey.split("T");
+    if (isMentorBlockedSlot(day, time)) return;
+
     toggleSlot(slotKey, dragMode);
   };
 
@@ -72,6 +81,9 @@ export default function ScheduleGrid({
   // 모바일 터치 드래그 지원
   const handleTouchStart = (e: React.TouchEvent, slotKey: string) => {
     if (isReadOnly) return;
+    const [day, time] = slotKey.split("T");
+    if (isMentorBlockedSlot(day, time)) return;
+
     const mode = selectedSet.has(slotKey) ? "deselect" : "select";
     setDragMode(mode);
     setIsDragging(true);
@@ -85,7 +97,10 @@ export default function ScheduleGrid({
     if (targetElement) {
       const slotKey = targetElement.getAttribute("data-slot");
       if (slotKey) {
-        toggleSlot(slotKey, dragMode);
+        const [day, time] = slotKey.split("T");
+        if (!isMentorBlockedSlot(day, time)) {
+          toggleSlot(slotKey, dragMode);
+        }
       }
     }
   };
@@ -94,14 +109,16 @@ export default function ScheduleGrid({
     setIsDragging(false);
   };
 
-  // 빠른 선택 프리셋 (멘티 편의 기능)
+  // 빠른 선택 프리셋 (멘토 불가 슬롯 제외하고 선택)
   const selectRangeForDate = (date: string, startH: number, endH: number) => {
     if (isReadOnly) return;
     const newSet = new Set(selectedSet);
     timeSlots.forEach((time) => {
       const [h] = time.split(":").map(Number);
       if (h >= startH && h < endH) {
-        newSet.add(`${date}T${time}`);
+        if (!isMentorBlockedSlot(date, time)) {
+          newSet.add(`${date}T${time}`);
+        }
       }
     });
     onChange(Array.from(newSet));
@@ -109,14 +126,19 @@ export default function ScheduleGrid({
 
   const toggleFullDay = (date: string) => {
     if (isReadOnly) return;
-    const daySlots = timeSlots.map((t) => `${date}T${t}`);
-    const isAllSelected = daySlots.every((s) => selectedSet.has(s));
+    const availableDaySlots = timeSlots
+      .filter((t) => !isMentorBlockedSlot(date, t))
+      .map((t) => `${date}T${t}`);
+
+    if (availableDaySlots.length === 0) return;
+
+    const isAllSelected = availableDaySlots.every((s) => selectedSet.has(s));
     const newSet = new Set(selectedSet);
 
     if (isAllSelected) {
-      daySlots.forEach((s) => newSet.delete(s));
+      availableDaySlots.forEach((s) => newSet.delete(s));
     } else {
-      daySlots.forEach((s) => newSet.add(s));
+      availableDaySlots.forEach((s) => newSet.add(s));
     }
     onChange(Array.from(newSet));
   };
@@ -142,7 +164,7 @@ export default function ScheduleGrid({
             }}
             className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm border border-slate-200 hover:bg-slate-50 transition active:scale-95"
           >
-            오후 (13~18시) 전체 선택
+            오후 (13~18시) 선택
           </button>
           <button
             type="button"
@@ -164,13 +186,25 @@ export default function ScheduleGrid({
         </div>
       )}
 
-      {/* 조율 안내 팁 */}
-      {!isReadOnly && (
-        <p className="mb-3 text-xs text-slate-500 flex items-center gap-1">
-          <Clock className="w-3.5 h-3.5 text-indigo-500" />
-          <span>가능한 시간대를 <strong>클릭</strong>하거나 <strong>손가락으로 드래그</strong>하여 칠해주세요. (다시 누르면 취소)</span>
-        </p>
-      )}
+      {/* 멘토 일정 안내 배지 */}
+      <div className="mb-3 rounded-xl bg-slate-100 border border-slate-200 px-3.5 py-2.5 text-xs text-slate-600 flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 font-medium">
+          <Clock className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+          <span>
+            멘토 가능 시간: <strong>13시 이후</strong> (단, <strong>월·목요일은 18시 이후</strong>만 가능)
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-[11px] text-slate-500">
+          <span className="inline-flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded bg-slate-200 border border-slate-300 inline-block" />
+            멘토 불가
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded bg-emerald-500 inline-block" />
+            내 선택
+          </span>
+        </div>
+      </div>
 
       {/* 반응형 가로 스크롤 컨테이너 */}
       <div className="overflow-x-auto pb-4 rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -204,7 +238,7 @@ export default function ScheduleGrid({
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
-            {timeSlots.map((time, idx) => {
+            {timeSlots.map((time) => {
               const isHour = time.endsWith(":00");
               return (
                 <div
@@ -223,6 +257,21 @@ export default function ScheduleGrid({
                   {dates.map((date) => {
                     const slotKey = `${date}T${time}`;
                     const isSelected = selectedSet.has(slotKey);
+                    const isBlocked = isMentorBlockedSlot(date, time);
+
+                    if (isBlocked) {
+                      return (
+                        <div
+                          key={slotKey}
+                          className="flex-1 min-w-[76px] sm:min-w-[96px] h-9 mx-0.5 my-0.5 rounded border border-slate-200/80 bg-slate-100/90 text-slate-400 flex flex-col items-center justify-center cursor-not-allowed select-none transition-all"
+                          title="멘토 불가능 시간 (월·목은 18시 이후 가능)"
+                        >
+                          <span className="text-[10px] font-semibold text-slate-400">
+                            멘토 불가
+                          </span>
+                        </div>
+                      );
+                    }
 
                     return (
                       <div

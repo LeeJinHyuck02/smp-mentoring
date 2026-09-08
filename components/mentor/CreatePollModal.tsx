@@ -26,7 +26,7 @@ export default function CreatePollModal({
 }: CreatePollModalProps) {
   const [title, setTitle] = useState("정기 멘토링 시간 결정");
   const [selectedDays, setSelectedDays] = useState<string[]>(["월", "화", "수", "목", "금"]);
-  const [startTime, setStartTime] = useState("09:00");
+  const [startTime, setStartTime] = useState("13:00");
   const [endTime, setEndTime] = useState("21:00");
   const [slotDuration, setSlotDuration] = useState<number>(30);
   const [isLoading, setIsLoading] = useState(false);
@@ -165,6 +165,7 @@ export default function CreatePollModal({
               <input
                 type="time"
                 value={startTime}
+                min="13:00"
                 onChange={(e) => setStartTime(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-indigo-500 outline-none"
               />
@@ -196,6 +197,9 @@ export default function CreatePollModal({
               </select>
             </div>
           </div>
+          <p className="text-[11px] text-slate-400 mt-1">
+            💡 13시 이전은 노출되지 않으며, 월·목요일은 18시 이전이 자동으로 선택 불가 처리됩니다.
+          </p>
 
           {error && (
             <div className="rounded-lg bg-rose-50 p-2.5 text-xs text-rose-600 font-medium">

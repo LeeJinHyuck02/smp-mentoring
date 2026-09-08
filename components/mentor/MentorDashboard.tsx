@@ -22,8 +22,6 @@ import {
   MessageSquare,
   X,
   Lock,
-  ToggleLeft,
-  ToggleRight,
 } from "lucide-react";
 
 export const DEFAULT_MENTOR_ID = "00000000-0000-0000-0000-000000000001";
@@ -114,37 +112,6 @@ export default function MentorDashboard({ onLogout }: MentorDashboardProps) {
       navigator.clipboard.writeText(url);
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
-    }
-  };
-
-  // 멘토링 시간 조율 ON/OFF 상태 토글
-  const handleTogglePoll = async (pollId: string, currentIsClosed: boolean) => {
-    const nextClosed = !currentIsClosed;
-
-    // 즉각적인 UI 반영 (낙관적 갱신)
-    setPolls((prev) => {
-      const nextMap = { ...prev };
-      for (const secId in nextMap) {
-        nextMap[secId] = nextMap[secId].map((p) =>
-          p.id === pollId ? { ...p, is_closed: nextClosed } : p
-        );
-      }
-      return nextMap;
-    });
-
-    try {
-      const { error } = await supabase
-        .from("schedule_polls")
-        .update({ is_closed: nextClosed })
-        .eq("id", pollId);
-
-      if (error) {
-        console.error("시간 조율 상태 변경 실패:", error);
-        loadData();
-      }
-    } catch (err) {
-      console.error("시간 조율 상태 변경 오류:", err);
-      loadData();
     }
   };
 
@@ -347,62 +314,24 @@ export default function MentorDashboard({ onLogout }: MentorDashboardProps) {
                                     return (
                                       <div
                                         key={poll.id}
-                                        className="rounded-xl bg-white p-3 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                                        className="rounded-xl bg-white p-3 border border-slate-200 shadow-sm flex items-center justify-between gap-2"
                                       >
                                         <div className="min-w-0 flex-1">
-                                          <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-bold text-xs text-slate-800">
-                                              {poll.title}
-                                            </span>
-                                            {poll.is_closed ? (
-                                              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 border border-slate-200">
-                                                <Lock className="w-2.5 h-2.5" />
-                                                조율 마감됨 (OFF)
-                                              </span>
-                                            ) : (
-                                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/70">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                조율 진행 중 (ON)
-                                              </span>
-                                            )}
+                                          <div className="font-bold text-xs text-slate-800 truncate">
+                                            {poll.title}
                                           </div>
-                                          <div className="text-[11px] text-slate-400 mt-1">
-                                            요일: {poll.dates.join(", ")}요일 ({poll.start_time} ~ {poll.end_time})
+                                          <div className="text-[11px] text-slate-400 mt-0.5">
+                                            요일: {poll.dates.join(", ")}요일 (13:00 ~ {poll.end_time})
                                           </div>
                                         </div>
 
-                                        <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                                          <button
-                                            type="button"
-                                            onClick={() => handleTogglePoll(poll.id, poll.is_closed)}
-                                            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition active:scale-95 border ${
-                                              poll.is_closed
-                                                ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 shadow-sm"
-                                                : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
-                                            }`}
-                                            title={poll.is_closed ? "멘티들에게 시간 조율을 다시 엽니다" : "시간 조율을 마감합니다"}
-                                          >
-                                            {poll.is_closed ? (
-                                              <>
-                                                <ToggleLeft className="w-3.5 h-3.5 text-emerald-600" />
-                                                <span>조율 켜기 (ON)</span>
-                                              </>
-                                            ) : (
-                                              <>
-                                                <ToggleRight className="w-3.5 h-3.5 text-slate-500" />
-                                                <span>조율 마감 (OFF)</span>
-                                              </>
-                                            )}
-                                          </button>
-
-                                          <Link
-                                            href={pollUrl}
-                                            className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 text-xs font-bold text-indigo-700 transition active:scale-95"
-                                          >
-                                            <span>히트맵 보기</span>
-                                            <ExternalLink className="w-3 h-3" />
-                                          </Link>
-                                        </div>
+                                        <Link
+                                          href={pollUrl}
+                                          className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 text-xs font-bold text-indigo-700 transition active:scale-95"
+                                        >
+                                          <span>히트맵 보기</span>
+                                          <ExternalLink className="w-3 h-3" />
+                                        </Link>
                                       </div>
                                     );
                                   })}

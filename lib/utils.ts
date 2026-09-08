@@ -36,10 +36,12 @@ export function formatDayOrDateKorean(str: string): string {
   return str;
 }
 
-// 타임 슬롯 생성 유틸리티 (start: '09:00', end: '21:00', step: 30분)
+// 타임 슬롯 생성 유틸리티 (13시 이전은 아예 노출되지 않도록 보정)
 export function generateTimeSlots(start: string, end: string, stepMinutes = 30): string[] {
+  // 13시 이전의 시간대는 아예 안보이도록 최소 시작 시간을 13:00으로 보정
+  const effectiveStart = !start || start < "13:00" ? "13:00" : start;
   const slots: string[] = [];
-  const [startH, startM] = start.split(":").map(Number);
+  const [startH, startM] = effectiveStart.split(":").map(Number);
   const [endH, endM] = end.split(":").map(Number);
 
   let currentMinutes = startH * 60 + startM;
@@ -54,4 +56,41 @@ export function generateTimeSlots(start: string, end: string, stepMinutes = 30):
   }
 
   return slots;
+}
+
+// 멘토링 가능 시간 체크: 월요일·목요일 13:00~18:00은 멘토 불가 블락 (18:00 이후만 가능)
+export function isMentorBlockedSlot(dayOrDate: string, time: string): boolean {
+  if (!time) return false;
+  const [hour, min] = time.split(":").map(Number);
+  const totalMinutes = hour * 60 + min;
+
+  // 13:00부터 18:00 이전 (즉 13:00 ~ 17:59 슬롯)
+  const is13to18 = totalMinutes >= 13 * 60 && totalMinutes < 18 * 60;
+  if (!is13to18) {
+    return false;
+  }
+
+  const clean = dayOrDate.trim();
+
+  // 요일 문자열 판별 (월, 목, Mon, Thu)
+  if (
+    clean.includes("월") ||
+    clean.includes("목") ||
+    clean.startsWith("Mon") ||
+    clean.startsWith("Thu")
+  ) {
+    return true;
+  }
+
+  // YYYY-MM-DD 날짜 포맷인 경우 요일 확인
+  if (clean.includes("-")) {
+    try {
+      const [year, month, day] = clean.split("-").map(Number);
+      const d = new Date(year, month - 1, day);
+      const dayOfWeek = d.getDay();
+      return dayOfWeek === 1 || dayOfWeek === 4; // 1 = 월, 4 = 목
+    } catch {}
+  }
+
+  return false;
 }
