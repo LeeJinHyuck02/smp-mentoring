@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import MentorDashboard from "@/components/mentor/MentorDashboard";
 import { Lock, Eye, EyeOff, ShieldCheck, ArrowRight, AlertCircle } from "lucide-react";
+import { verifyMentorPassword } from "@/app/mentor/actions";
 
 export default function MentorPasswordGate() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -23,7 +24,7 @@ export default function MentorPasswordGate() {
     }
   }, []);
 
-  const handleLogin = (e?: React.FormEvent) => {
+  const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!password.trim()) {
       setErrorMsg("비밀번호를 입력해 주세요.");
@@ -33,17 +34,22 @@ export default function MentorPasswordGate() {
     setIsSubmitting(true);
     setErrorMsg("");
 
-    const correctPassword = process.env.NEXT_PUBLIC_MENTOR_PASSWORD || "smp1234";
+    try {
+      const isValid = await verifyMentorPassword(password);
 
-    if (password === correctPassword) {
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("smp_mentor_authed", "true");
+      if (isValid) {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("smp_mentor_authed", "true");
+        }
+        setIsAuthenticated(true);
+      } else {
+        setErrorMsg("비밀번호가 올바르지 않습니다. 다시 확인해 주세요.");
       }
-      setIsAuthenticated(true);
-    } else {
-      setErrorMsg("비밀번호가 올바르지 않습니다. 다시 확인해 주세요.");
+    } catch {
+      setErrorMsg("인증 확인 중 오류가 발생했습니다. 다시 시도해 주세요.");
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const handleLogout = () => {
@@ -133,14 +139,6 @@ export default function MentorPasswordGate() {
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
-
-        {/* 하단 안내 가이드 */}
-        <div className="mt-6 pt-5 border-t border-white/10 text-center">
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            💡 기본 비밀번호는 <code className="bg-white/10 px-1.5 py-0.5 rounded text-indigo-300 font-mono font-bold">smp1234</code> 입니다.<br />
-            비밀번호 변경은 <code className="text-slate-300 font-mono">.env.local</code> 파일의 <code className="text-indigo-300 font-mono">NEXT_PUBLIC_MENTOR_PASSWORD</code>에서 가능합니다.
-          </p>
-        </div>
       </div>
     </main>
   );

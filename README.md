@@ -127,7 +127,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 
 # 멘토 관리자 마스터 비밀번호 (원하는 비밀번호로 변경 가능)
-NEXT_PUBLIC_MENTOR_PASSWORD=smp1234
+MENTOR_PASSWORD=smp1234
 ```
 
 ### 3. 데이터베이스 초기화 (Supabase SQL Editor)
@@ -169,7 +169,7 @@ npm run build
 npm run start
 ```
 
-Vercel을 통해 원클릭으로 손쉽게 배포할 수 있으며, 환경 변수(`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_MENTOR_PASSWORD`)를 Vercel 프로젝트 대시보드에 등록하면 즉시 상용 서비스가 가능합니다.
+Vercel을 통해 원클릭으로 손쉽게 배포할 수 있으며, 환경 변수(`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `MENTOR_PASSWORD`)를 Vercel 프로젝트 대시보드에 등록하면 즉시 상용 서비스가 가능합니다.
 
 ---
 
