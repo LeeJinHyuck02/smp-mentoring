@@ -6,6 +6,7 @@ import { Course, Section, SchedulePoll } from "@/types/database";
 import CreateCourseModal from "@/components/mentor/CreateCourseModal";
 import CreateSectionModal from "@/components/mentor/CreateSectionModal";
 import CreatePollModal from "@/components/mentor/CreatePollModal";
+import QuestionBoard from "@/components/qna/QuestionBoard";
 import Link from "next/link";
 import {
   BookOpen,
@@ -18,6 +19,8 @@ import {
   CheckCircle2,
   Sparkles,
   RefreshCw,
+  MessageSquare,
+  X,
 } from "lucide-react";
 
 export const DEFAULT_MENTOR_ID = "00000000-0000-0000-0000-000000000001";
@@ -32,6 +35,7 @@ export default function MentorDashboard() {
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [sectionModalTarget, setSectionModalTarget] = useState<{ id: string; title: string } | null>(null);
   const [pollModalTarget, setPollModalTarget] = useState<{ id: string; name: string; slug: string } | null>(null);
+  const [qnaModalTarget, setQnaModalTarget] = useState<{ id: string; name: string } | null>(null);
 
   // 복사 피드백 상태
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -310,6 +314,21 @@ export default function MentorDashboard() {
                                 </div>
                               )}
                             </div>
+
+                            {/* 분반 Q&A 관리 버튼 */}
+                            <div className="mt-3 pt-3 border-t border-slate-200/80 flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                                <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
+                                분반 질문 및 답변
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setQnaModalTarget({ id: sec.id, name: sec.name })}
+                                className="rounded-lg bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 text-xs font-bold text-indigo-700 transition active:scale-95 flex items-center gap-1"
+                              >
+                                <span>Q&A 관리 ↗</span>
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
@@ -349,6 +368,33 @@ export default function MentorDashboard() {
           sectionSlug={pollModalTarget.slug}
           onSuccess={loadData}
         />
+      )}
+
+      {/* 멘토 전용 Q&A 답변 및 관리 모달 */}
+      {qnaModalTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-3xl rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div>
+                <span className="text-[11px] font-bold text-indigo-600 block">
+                  [{qnaModalTarget.name}]
+                </span>
+                <h3 className="text-base font-bold text-slate-900">
+                  분반 질의응답 (멘토 관리 모드)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQnaModalTarget(null)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <QuestionBoard sectionId={qnaModalTarget.id} isMentor={true} />
+          </div>
+        </div>
       )}
     </main>
   );
