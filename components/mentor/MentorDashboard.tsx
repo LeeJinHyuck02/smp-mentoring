@@ -21,11 +21,18 @@ import {
   RefreshCw,
   MessageSquare,
   X,
+  Lock,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 
 export const DEFAULT_MENTOR_ID = "00000000-0000-0000-0000-000000000001";
 
-export default function MentorDashboard() {
+interface MentorDashboardProps {
+  onLogout?: () => void;
+}
+
+export default function MentorDashboard({ onLogout }: MentorDashboardProps) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [sections, setSections] = useState<Record<string, Section[]>>({});
   const [polls, setPolls] = useState<Record<string, SchedulePoll[]>>({});
@@ -110,6 +117,37 @@ export default function MentorDashboard() {
     }
   };
 
+  // 멘토링 시간 조율 ON/OFF 상태 토글
+  const handleTogglePoll = async (pollId: string, currentIsClosed: boolean) => {
+    const nextClosed = !currentIsClosed;
+
+    // 즉각적인 UI 반영 (낙관적 갱신)
+    setPolls((prev) => {
+      const nextMap = { ...prev };
+      for (const secId in nextMap) {
+        nextMap[secId] = nextMap[secId].map((p) =>
+          p.id === pollId ? { ...p, is_closed: nextClosed } : p
+        );
+      }
+      return nextMap;
+    });
+
+    try {
+      const { error } = await supabase
+        .from("schedule_polls")
+        .update({ is_closed: nextClosed })
+        .eq("id", pollId);
+
+      if (error) {
+        console.error("시간 조율 상태 변경 실패:", error);
+        loadData();
+      }
+    } catch (err) {
+      console.error("시간 조율 상태 변경 오류:", err);
+      loadData();
+    }
+  };
+
   return (
     <main className="min-h-screen bg-slate-50 pb-20">
       {/* 1. 상단 글로벌 헤더 */}
@@ -125,12 +163,23 @@ export default function MentorDashboard() {
               </h1>
               <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                단일 멘토 모드 (로그인 불필요)
+                단일 멘토 모드 (비밀번호 보호됨)
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {onLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-100 transition active:scale-95 flex items-center gap-1.5"
+                title="멘토 워크스페이스 잠금"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>잠금</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={loadData}
@@ -138,7 +187,7 @@ export default function MentorDashboard() {
               title="데이터 새로고침"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              새로고침
+              <span className="hidden sm:inline">새로고침</span>
             </button>
             <button
               type="button"
@@ -153,6 +202,14 @@ export default function MentorDashboard() {
       </header>
 
       <div className="mx-auto max-w-5xl px-4 pt-6 sm:px-6">
+        {/* 로딩 인디케이터 */}
+        {isLoading && courses.length === 0 && (
+          <div className="flex flex-col justify-center items-center py-20 text-slate-400">
+            <RefreshCw className="w-8 h-8 animate-spin text-indigo-600 mb-3" />
+            <p className="text-xs font-bold text-slate-600">Supabase 데이터를 불러오는 중입니다...</p>
+          </div>
+        )}
+
         {/* 과목 목록 영역 */}
         {courses.length === 0 && !isLoading ? (
           <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-white p-12 text-center my-8">
@@ -283,31 +340,69 @@ export default function MentorDashboard() {
                                   개설된 투표가 없습니다. [+ 시간 투표]를 눌러 멘티들에게 시간을 받아보세요!
                                 </div>
                               ) : (
-                                <div className="space-y-2">
+                                <div className="space-y-2.5">
                                   {secPolls.map((poll) => {
                                     const pollUrl = `/s/${sec.slug}/schedule/${poll.id}`;
 
                                     return (
                                       <div
                                         key={poll.id}
-                                        className="rounded-xl bg-white p-3 border border-slate-200 shadow-sm flex items-center justify-between gap-2"
+                                        className="rounded-xl bg-white p-3 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                                       >
                                         <div className="min-w-0 flex-1">
-                                          <div className="font-bold text-xs text-slate-800 truncate">
-                                            {poll.title}
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-bold text-xs text-slate-800">
+                                              {poll.title}
+                                            </span>
+                                            {poll.is_closed ? (
+                                              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 border border-slate-200">
+                                                <Lock className="w-2.5 h-2.5" />
+                                                조율 마감됨 (OFF)
+                                              </span>
+                                            ) : (
+                                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/70">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                조율 진행 중 (ON)
+                                              </span>
+                                            )}
                                           </div>
-                                          <div className="text-[11px] text-slate-400 mt-0.5">
+                                          <div className="text-[11px] text-slate-400 mt-1">
                                             요일: {poll.dates.join(", ")}요일 ({poll.start_time} ~ {poll.end_time})
                                           </div>
                                         </div>
 
-                                        <Link
-                                          href={pollUrl}
-                                          className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 text-xs font-bold text-indigo-700 transition active:scale-95"
-                                        >
-                                          <span>히트맵 보기</span>
-                                          <ExternalLink className="w-3 h-3" />
-                                        </Link>
+                                        <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                                          <button
+                                            type="button"
+                                            onClick={() => handleTogglePoll(poll.id, poll.is_closed)}
+                                            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition active:scale-95 border ${
+                                              poll.is_closed
+                                                ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 shadow-sm"
+                                                : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+                                            }`}
+                                            title={poll.is_closed ? "멘티들에게 시간 조율을 다시 엽니다" : "시간 조율을 마감합니다"}
+                                          >
+                                            {poll.is_closed ? (
+                                              <>
+                                                <ToggleLeft className="w-3.5 h-3.5 text-emerald-600" />
+                                                <span>조율 켜기 (ON)</span>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <ToggleRight className="w-3.5 h-3.5 text-slate-500" />
+                                                <span>조율 마감 (OFF)</span>
+                                              </>
+                                            )}
+                                          </button>
+
+                                          <Link
+                                            href={pollUrl}
+                                            className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 text-xs font-bold text-indigo-700 transition active:scale-95"
+                                          >
+                                            <span>히트맵 보기</span>
+                                            <ExternalLink className="w-3 h-3" />
+                                          </Link>
+                                        </div>
                                       </div>
                                     );
                                   })}

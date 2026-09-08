@@ -6,7 +6,7 @@ import ScheduleGrid from "@/components/schedule/ScheduleGrid";
 import ScheduleHeatmap from "@/components/schedule/ScheduleHeatmap";
 import SubmissionModal from "@/components/schedule/SubmissionModal";
 import { SchedulePoll, ScheduleSubmission } from "@/types/database";
-import { Calendar, Users, BarChart3, CheckCircle2, Share2, Sparkles } from "lucide-react";
+import { Calendar, Users, BarChart3, CheckCircle2, Share2, Sparkles, Lock, AlertCircle } from "lucide-react";
 
 // 데모용 기본 스케줄 데이터 (정기 멘토링: 월~금)
 const DEMO_POLL: SchedulePoll = {
@@ -105,6 +105,9 @@ export default function SchedulePage({
 
         if (pollData) {
           setPoll(pollData);
+          if (pollData.is_closed) {
+            setActiveTab("heatmap");
+          }
         }
 
         // 제출된 전체 시간표 조회
@@ -222,6 +225,22 @@ export default function SchedulePage({
       </header>
 
       <div className="mx-auto max-w-4xl px-4 pt-4 sm:px-6 sm:pt-6">
+        {/* 조율 마감 알림 배너 */}
+        {poll.is_closed && (
+          <div className="mb-5 rounded-2xl bg-amber-50/90 border border-amber-200/90 p-4 text-amber-900 flex items-start gap-3 shadow-sm">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-xs">
+              <div className="font-bold text-sm text-amber-950 mb-0.5 flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-amber-600" />
+                이 멘토링 시간 조율은 마감되었습니다.
+              </div>
+              <p className="text-amber-800 leading-relaxed">
+                멘토가 시간표를 확정했거나 제출 기간이 종료되었습니다. 아래 <strong>실시간 취합 결과 (히트맵)</strong>에서 전체 일정을 확인하실 수 있습니다.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* 2. 탭 전환 바 (내 시간표 입력 vs 전체 취합 히트맵) */}
         <div className="mb-6 flex rounded-2xl bg-slate-200/80 p-1 shadow-inner">
           <button
@@ -235,6 +254,11 @@ export default function SchedulePage({
           >
             <Calendar className="w-4 h-4" />
             <span>1. 내 가능 시간 선택</span>
+            {poll.is_closed && (
+              <span className="rounded-full bg-slate-200 px-1.5 py-0.2 text-[10px] font-bold text-slate-500">
+                마감
+              </span>
+            )}
             {selectedSlots.length > 0 && (
               <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-bold text-indigo-700">
                 {selectedSlots.length}
@@ -265,22 +289,31 @@ export default function SchedulePage({
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-base sm:text-lg font-bold text-slate-900">
-                  내가 참석 가능한 시간을 선택하세요
+                  {poll.title}
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  초록색으로 칠해진 시간이 내가 제출할 시간입니다. (회원가입 필요 없음)
+                  {poll.is_closed
+                    ? "현재 조율이 마감되어 시간표 확인만 가능합니다."
+                    : "참석 가능한 시간을 선택하세요. 초록색으로 칠해진 시간이 제출할 시간입니다."}
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(true)}
-                disabled={selectedSlots.length === 0}
-                className="w-full sm:w-auto rounded-xl bg-indigo-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-indigo-700 transition active:scale-95 disabled:opacity-40 flex items-center justify-center gap-1.5"
-              >
-                <Sparkles className="w-4 h-4" />
-                {isSubmitted ? "내 시간표 수정 완료" : "내 시간표 제출하기"}
-              </button>
+              {poll.is_closed ? (
+                <div className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-400">
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>제출 마감됨</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  disabled={selectedSlots.length === 0}
+                  className="w-full sm:w-auto rounded-xl bg-indigo-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-indigo-700 transition active:scale-95 disabled:opacity-40 flex items-center justify-center gap-1.5"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {isSubmitted ? "내 시간표 수정 완료" : "내 시간표 제출하기"}
+                </button>
+              )}
             </div>
 
             <ScheduleGrid
@@ -289,23 +322,25 @@ export default function SchedulePage({
               endTime={poll.end_time}
               slotDuration={poll.slot_duration}
               selectedSlots={selectedSlots}
-              onChange={setSelectedSlots}
+              onChange={poll.is_closed ? () => {} : setSelectedSlots}
             />
 
-            {/* 하단 고정 제출 플로팅 버튼 (모바일 전용) */}
-            <div className="fixed bottom-4 left-4 right-4 z-20 sm:hidden">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(true)}
-                disabled={selectedSlots.length === 0}
-                className="w-full rounded-2xl bg-indigo-600 py-3.5 text-sm font-bold text-white shadow-xl hover:bg-indigo-700 transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                <Sparkles className="w-4 h-4" />
-                {selectedSlots.length > 0
-                  ? `${selectedSlots.length}개 선택 완료 (${isSubmitted ? "수정하기" : "제출하기"})`
-                  : "가능한 시간을 선택해주세요"}
-              </button>
-            </div>
+            {/* 하단 고정 제출 플로팅 버튼 (모바일 전용, 진행 중일 때만 표시) */}
+            {!poll.is_closed && (
+              <div className="fixed bottom-4 left-4 right-4 z-20 sm:hidden">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  disabled={selectedSlots.length === 0}
+                  className="w-full rounded-2xl bg-indigo-600 py-3.5 text-sm font-bold text-white shadow-xl hover:bg-indigo-700 transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {selectedSlots.length > 0
+                    ? `${selectedSlots.length}개 선택 완료 (${isSubmitted ? "수정하기" : "제출하기"})`
+                    : "가능한 시간을 선택해주세요"}
+                </button>
+              </div>
+            )}
           </div>
         )}
 

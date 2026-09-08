@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Share2,
+  Lock,
 } from "lucide-react";
 
 export default function MenteeSectionPage({
@@ -77,6 +78,12 @@ export default function MenteeSectionPage({
           const currentPoll = pollsData[0];
           setPoll(currentPoll);
 
+          // 만약 시간 조율이 마감된 상태면 기본 탭을 Q&A로 전환하고 히트맵 결과로 고정
+          if (currentPoll.is_closed) {
+            setActiveMainTab("qna");
+            setActiveScheduleSubTab("heatmap");
+          }
+
           // 이 투표에 제출된 시간표들 조회
           const { data: subsData } = await supabase
             .from("schedule_submissions")
@@ -100,6 +107,9 @@ export default function MenteeSectionPage({
               } catch {}
             }
           }
+        } else {
+          // 투표가 없는 분반은 Q&A 탭을 기본으로 표시
+          setActiveMainTab("qna");
         }
       } catch (err) {
         console.error("데이터 로드 오류:", err);
@@ -233,7 +243,7 @@ export default function MenteeSectionPage({
           <button
             type="button"
             onClick={() => setActiveMainTab("schedule")}
-            className={`flex items-center justify-center gap-2 rounded-xl py-3 text-xs sm:text-sm font-extrabold transition-all ${
+            className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl py-3 text-xs sm:text-sm font-extrabold transition-all ${
               activeMainTab === "schedule"
                 ? "bg-white text-indigo-600 shadow-sm"
                 : "text-slate-600 hover:text-slate-900"
@@ -241,6 +251,11 @@ export default function MenteeSectionPage({
           >
             <Calendar className="w-4 h-4" />
             <span>1. 멘토링 시간 조율</span>
+            {poll?.is_closed && (
+              <span className="rounded-full bg-slate-200 px-1.5 py-0.2 text-[10px] font-bold text-slate-500">
+                마감
+              </span>
+            )}
           </button>
 
           <button
@@ -260,6 +275,22 @@ export default function MenteeSectionPage({
         {/* 3. 탭 1 내용: 시간 조율 */}
         {activeMainTab === "schedule" && (
           <div>
+            {/* 조율 마감 알림 배너 */}
+            {poll?.is_closed && (
+              <div className="mb-5 rounded-2xl bg-amber-50/90 border border-amber-200/90 p-4 text-amber-900 flex items-start gap-3 shadow-sm">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-xs">
+                  <div className="font-bold text-sm text-amber-950 mb-0.5 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-amber-600" />
+                    이번 학기 멘토링 시간 조율이 마감되었습니다.
+                  </div>
+                  <p className="text-amber-800 leading-relaxed">
+                    멘토가 일정을 확정했거나 시간 제출 기간이 종료되었습니다. 아래 <strong>실시간 취합 결과(히트맵)</strong>에서 시간표를 확인하시거나, 질문은 <strong>[2. 질문 게시판 (Q&A)]</strong>을 이용해 주세요.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {!poll && !isLoading ? (
               <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-white p-12 text-center my-6">
                 <Clock className="mx-auto h-12 w-12 text-slate-300 mb-3" />
@@ -317,19 +348,28 @@ export default function MenteeSectionPage({
                           {poll.title}
                         </h2>
                         <p className="text-xs text-slate-500 mt-0.5">
-                          참석 가능한 요일과 시간대를 터치하거나 드래그하여 선택하세요.
+                          {poll.is_closed
+                            ? "현재 조율이 마감되어 시간표 확인만 가능합니다."
+                            : "참석 가능한 요일과 시간대를 터치하거나 드래그하여 선택하세요."}
                         </p>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setIsSubmitModalOpen(true)}
-                        disabled={selectedSlots.length === 0}
-                        className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-indigo-700 transition active:scale-95 disabled:opacity-40 flex items-center gap-1"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        {isSubmitted ? "시간표 수정 완료" : "시간표 제출하기"}
-                      </button>
+                      {poll.is_closed ? (
+                        <div className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200 px-3.5 py-2 text-xs font-bold text-slate-400">
+                          <Lock className="w-3.5 h-3.5" />
+                          <span>시간 제출 마감됨</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setIsSubmitModalOpen(true)}
+                          disabled={selectedSlots.length === 0}
+                          className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-indigo-700 transition active:scale-95 disabled:opacity-40 flex items-center gap-1"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          {isSubmitted ? "시간표 수정 완료" : "시간표 제출하기"}
+                        </button>
+                      )}
                     </div>
 
                     <ScheduleGrid
@@ -338,23 +378,25 @@ export default function MenteeSectionPage({
                       endTime={poll.end_time}
                       slotDuration={poll.slot_duration}
                       selectedSlots={selectedSlots}
-                      onChange={setSelectedSlots}
+                      onChange={poll.is_closed ? () => {} : setSelectedSlots}
                     />
 
-                    {/* 모바일용 플로팅 제출 버튼 */}
-                    <div className="fixed bottom-4 left-4 right-4 z-20 sm:hidden">
-                      <button
-                        type="button"
-                        onClick={() => setIsSubmitModalOpen(true)}
-                        disabled={selectedSlots.length === 0}
-                        className="w-full rounded-2xl bg-indigo-600 py-3 text-xs font-bold text-white shadow-xl hover:bg-indigo-700 transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        {selectedSlots.length > 0
-                          ? `${selectedSlots.length}개 선택 (${isSubmitted ? "수정하기" : "제출하기"})`
-                          : "참석 가능한 시간을 선택해주세요"}
-                      </button>
-                    </div>
+                    {/* 모바일용 플로팅 제출 버튼 (조율 진행 중일 때만 표시) */}
+                    {!poll.is_closed && (
+                      <div className="fixed bottom-4 left-4 right-4 z-20 sm:hidden">
+                        <button
+                          type="button"
+                          onClick={() => setIsSubmitModalOpen(true)}
+                          disabled={selectedSlots.length === 0}
+                          className="w-full rounded-2xl bg-indigo-600 py-3 text-xs font-bold text-white shadow-xl hover:bg-indigo-700 transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          {selectedSlots.length > 0
+                            ? `${selectedSlots.length}개 선택 (${isSubmitted ? "수정하기" : "제출하기"})`
+                            : "참석 가능한 시간을 선택해주세요"}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div>
