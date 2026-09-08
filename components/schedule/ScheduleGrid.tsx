@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { formatTimeKorean, formatDateKorean, generateTimeSlots, cn } from "@/lib/utils";
+import { formatTimeKorean, formatDayOrDateKorean, generateTimeSlots, cn } from "@/lib/utils";
 import { Check, Sparkles, RotateCcw, Clock } from "lucide-react";
 
 interface ScheduleGridProps {
@@ -175,20 +175,20 @@ export default function ScheduleGrid({
       {/* 반응형 가로 스크롤 컨테이너 */}
       <div className="overflow-x-auto pb-4 rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="min-w-fit p-3">
-          {/* 테이블 헤더: 날짜 */}
+          {/* 테이블 헤더: 요일 */}
           <div className="flex border-b border-slate-200 pb-2">
             <div className="w-16 sm:w-20 shrink-0 text-center text-xs font-semibold text-slate-400 py-1">
               시간
             </div>
-            {dates.map((date) => (
-              <div key={date} className="flex-1 min-w-[76px] sm:min-w-[96px] text-center px-1">
-                <div className="font-bold text-xs sm:text-sm text-slate-800">
-                  {formatDateKorean(date)}
+            {dates.map((dayOrDate) => (
+              <div key={dayOrDate} className="flex-1 min-w-[76px] sm:min-w-[96px] text-center px-1">
+                <div className="font-extrabold text-xs sm:text-sm text-slate-800">
+                  {formatDayOrDateKorean(dayOrDate)}
                 </div>
                 {!isReadOnly && (
                   <button
                     type="button"
-                    onClick={() => toggleFullDay(date)}
+                    onClick={() => toggleFullDay(dayOrDate)}
                     className="mt-1 text-[11px] text-indigo-600 hover:text-indigo-800 hover:underline font-medium block mx-auto active:scale-95"
                   >
                     하루 전체

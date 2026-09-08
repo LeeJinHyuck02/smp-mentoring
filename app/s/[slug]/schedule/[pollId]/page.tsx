@@ -8,12 +8,12 @@ import SubmissionModal from "@/components/schedule/SubmissionModal";
 import { SchedulePoll, ScheduleSubmission } from "@/types/database";
 import { Calendar, Users, BarChart3, CheckCircle2, Share2, Sparkles } from "lucide-react";
 
-// 데모용 기본 스케줄 데이터 (Supabase 연결 전에도 즉시 체험 가능)
+// 데모용 기본 스케줄 데이터 (정기 멘토링: 월~금)
 const DEMO_POLL: SchedulePoll = {
   id: "demo-poll-01",
   section_id: "demo-sec-01",
-  title: "3주차 멘토링 보강 일정 조율",
-  dates: ["2026-09-15", "2026-09-16", "2026-09-17"],
+  title: "정기 멘토링 시간 결정 (주 1회)",
+  dates: ["월", "화", "수", "목", "금"],
   start_time: "10:00",
   end_time: "20:00",
   slot_duration: 30,
@@ -29,8 +29,8 @@ const INITIAL_DEMO_SUBMISSIONS: ScheduleSubmission[] = [
     participant_name: "김민수",
     pin_hash: "1234",
     available_slots: [
-      "2026-09-15T14:00", "2026-09-15T14:30", "2026-09-15T15:00", "2026-09-15T15:30",
-      "2026-09-16T15:00", "2026-09-16T15:30", "2026-09-16T16:00"
+      "월T14:00", "월T14:30", "월T15:00", "월T15:30",
+      "수T15:00", "수T15:30", "수T16:00"
     ],
     updated_at: new Date().toISOString(),
   },
@@ -40,8 +40,8 @@ const INITIAL_DEMO_SUBMISSIONS: ScheduleSubmission[] = [
     participant_name: "이영희",
     pin_hash: "1234",
     available_slots: [
-      "2026-09-15T14:00", "2026-09-15T14:30", "2026-09-15T15:00",
-      "2026-09-17T13:00", "2026-09-17T13:30"
+      "월T14:00", "월T14:30", "월T15:00",
+      "금T13:00", "금T13:30"
     ],
     updated_at: new Date().toISOString(),
   },
@@ -51,8 +51,8 @@ const INITIAL_DEMO_SUBMISSIONS: ScheduleSubmission[] = [
     participant_name: "박지성",
     pin_hash: "1234",
     available_slots: [
-      "2026-09-15T14:00", "2026-09-15T14:30", "2026-09-15T15:00", "2026-09-15T15:30",
-      "2026-09-16T15:00", "2026-09-16T15:30"
+      "월T14:00", "월T14:30", "월T15:00", "월T15:30",
+      "수T15:00", "수T15:30"
     ],
     updated_at: new Date().toISOString(),
   }

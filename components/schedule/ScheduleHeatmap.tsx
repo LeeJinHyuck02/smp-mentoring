@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { formatTimeKorean, formatDateKorean, generateTimeSlots, cn } from "@/lib/utils";
+import { formatTimeKorean, formatDayOrDateKorean, generateTimeSlots, cn } from "@/lib/utils";
 import { ScheduleSubmission } from "@/types/database";
 import { Users, Trophy, CheckCircle, Info, Sparkles } from "lucide-react";
 
@@ -159,7 +159,7 @@ export default function ScheduleHeatmap({
                     </span>
                   </div>
                   <div className="font-bold text-sm text-slate-900 mt-1">
-                    {formatDateKorean(item.date)}
+                    {formatDayOrDateKorean(item.date)}
                   </div>
                   <div className="text-xs text-indigo-600 font-semibold mt-0.5">
                     {formatTimeKorean(item.time)}
@@ -196,10 +196,10 @@ export default function ScheduleHeatmap({
             <div className="w-16 sm:w-20 shrink-0 text-center text-xs font-semibold text-slate-400 py-1">
               시간
             </div>
-            {dates.map((date) => (
-              <div key={date} className="flex-1 min-w-[76px] sm:min-w-[96px] text-center px-1">
-                <div className="font-bold text-xs sm:text-sm text-slate-800">
-                  {formatDateKorean(date)}
+            {dates.map((dayOrDate) => (
+              <div key={dayOrDate} className="flex-1 min-w-[76px] sm:min-w-[96px] text-center px-1">
+                <div className="font-extrabold text-xs sm:text-sm text-slate-800">
+                  {formatDayOrDateKorean(dayOrDate)}
                 </div>
               </div>
             ))}
@@ -261,7 +261,7 @@ export default function ScheduleHeatmap({
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-indigo-100">
             <div>
               <span className="font-extrabold text-slate-900 text-sm sm:text-base mr-2">
-                {formatDateKorean(activeDetails.date)} {formatTimeKorean(activeDetails.time)}
+                {formatDayOrDateKorean(activeDetails.date)} {formatTimeKorean(activeDetails.time)}
               </span>
               <span className={cn(
                 "rounded-full px-2.5 py-0.5 text-xs font-bold",

@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { Course, Section, SchedulePoll } from "@/types/database";
-import AuthModal from "@/components/mentor/AuthModal";
 import CreateCourseModal from "@/components/mentor/CreateCourseModal";
 import CreateSectionModal from "@/components/mentor/CreateSectionModal";
 import CreatePollModal from "@/components/mentor/CreatePollModal";
@@ -16,20 +15,20 @@ import {
   Share2,
   ExternalLink,
   Users,
-  LogOut,
-  LogIn,
   CheckCircle2,
+  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 
+export const DEFAULT_MENTOR_ID = "00000000-0000-0000-0000-000000000001";
+
 export default function MentorDashboard() {
-  const [sessionUser, setSessionUser] = useState<any>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [sections, setSections] = useState<Record<string, Section[]>>({});
   const [polls, setPolls] = useState<Record<string, SchedulePoll[]>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // 모달 상태
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [sectionModalTarget, setSectionModalTarget] = useState<{ id: string; title: string } | null>(null);
   const [pollModalTarget, setPollModalTarget] = useState<{ id: string; name: string; slug: string } | null>(null);
@@ -37,15 +36,14 @@ export default function MentorDashboard() {
   // 복사 피드백 상태
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // 1. 세션 확인 및 데이터 로드
-  const loadData = useCallback(async (userId: string) => {
+  // 1. 과목/분반/투표 데이터 로드 (회원가입 없이 즉시 조회)
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // 멘토가 소유한 과목 조회
+      // 멘토가 소유한 과목 조회 (단일 멘토 전용: 전체 과목 로드)
       const { data: courseData } = await supabase
         .from("courses")
         .select("*")
-        .eq("mentor_id", userId)
         .order("created_at", { ascending: false });
 
       if (courseData) {
@@ -97,32 +95,8 @@ export default function MentorDashboard() {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSessionUser(session?.user ?? null);
-      if (session?.user) {
-        loadData(session.user.id);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSessionUser(session?.user ?? null);
-      if (session?.user) {
-        loadData(session.user.id);
-      } else {
-        setCourses([]);
-        setSections({});
-        setPolls({});
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    loadData();
   }, [loadData]);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
 
   const handleCopy = (id: string, url: string) => {
     if (typeof window !== "undefined") {
@@ -132,59 +106,6 @@ export default function MentorDashboard() {
     }
   };
 
-  // 로그인하지 않은 경우 보여줄 관리자 로그인 진입 화면
-  if (!sessionUser) {
-    return (
-      <main className="min-h-screen bg-slate-50 flex flex-col justify-center items-center px-4 py-12">
-        <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl border border-slate-100 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-white font-black text-xl shadow-md mb-5">
-            SMP
-          </div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            SMP 멘토 관리 센터
-          </h1>
-          <p className="mt-2 text-xs sm:text-sm text-slate-500 leading-relaxed">
-            한 계정으로 담당 과목과 분반을 손쉽게 개설하고,<br />
-            멘티들이 올린 시간표와 질의응답을 통합 관리하세요.
-          </p>
-
-          <div className="mt-8 space-y-3">
-            <button
-              type="button"
-              onClick={() => setIsAuthModalOpen(true)}
-              className="w-full rounded-2xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-md hover:bg-indigo-700 transition active:scale-95 flex items-center justify-center gap-2"
-            >
-              <LogIn className="w-4 h-4" />
-              멘토 로그인 / 가입하기
-            </button>
-
-            {/* 데모 체험 링크 */}
-            <Link
-              href="/s/demo-class/schedule/demo-poll"
-              className="block w-full rounded-2xl bg-slate-100 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition active:scale-95"
-            >
-              스케줄러 멘티 화면 먼저 둘러보기 ↗
-            </Link>
-          </div>
-        </div>
-
-        <AuthModal
-          isOpen={isAuthModalOpen}
-          onClose={() => setIsAuthModalOpen(false)}
-          onSuccess={() => {
-            supabase.auth.getUser().then(({ data }) => {
-              if (data?.user) {
-                setSessionUser(data.user);
-                loadData(data.user.id);
-              }
-            });
-          }}
-        />
-      </main>
-    );
-  }
-
-  // 로그인된 멘토 메인 대시보드
   return (
     <main className="min-h-screen bg-slate-50 pb-20">
       {/* 1. 상단 글로벌 헤더 */}
@@ -198,8 +119,9 @@ export default function MentorDashboard() {
               <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight">
                 멘토 워크스페이스
               </h1>
-              <span className="text-[11px] font-medium text-slate-500">
-                {sessionUser?.email}
+              <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                단일 멘토 모드 (로그인 불필요)
               </span>
             </div>
           </div>
@@ -207,19 +129,20 @@ export default function MentorDashboard() {
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={loadData}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition active:scale-95 flex items-center gap-1"
+              title="데이터 새로고침"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              새로고침
+            </button>
+            <button
+              type="button"
               onClick={() => setIsCourseModalOpen(true)}
               className="rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition active:scale-95 flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" />
               과목 개설
-            </button>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition active:scale-95 flex items-center gap-1"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              로그아웃
             </button>
           </div>
         </div>
@@ -370,7 +293,7 @@ export default function MentorDashboard() {
                                             {poll.title}
                                           </div>
                                           <div className="text-[11px] text-slate-400 mt-0.5">
-                                            {poll.dates.length}일간 ({poll.start_time} ~ {poll.end_time})
+                                            요일: {poll.dates.join(", ")}요일 ({poll.start_time} ~ {poll.end_time})
                                           </div>
                                         </div>
 
@@ -403,8 +326,8 @@ export default function MentorDashboard() {
       <CreateCourseModal
         isOpen={isCourseModalOpen}
         onClose={() => setIsCourseModalOpen(false)}
-        mentorId={sessionUser?.id}
-        onSuccess={() => sessionUser && loadData(sessionUser.id)}
+        mentorId={DEFAULT_MENTOR_ID}
+        onSuccess={loadData}
       />
 
       {sectionModalTarget && (
@@ -413,7 +336,7 @@ export default function MentorDashboard() {
           onClose={() => setSectionModalTarget(null)}
           courseId={sectionModalTarget.id}
           courseTitle={sectionModalTarget.title}
-          onSuccess={() => sessionUser && loadData(sessionUser.id)}
+          onSuccess={loadData}
         />
       )}
 
@@ -424,10 +347,9 @@ export default function MentorDashboard() {
           sectionId={pollModalTarget.id}
           sectionName={pollModalTarget.name}
           sectionSlug={pollModalTarget.slug}
-          onSuccess={() => sessionUser && loadData(sessionUser.id)}
+          onSuccess={loadData}
         />
       )}
     </main>
   );
 }
-
