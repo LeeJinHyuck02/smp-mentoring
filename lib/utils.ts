@@ -1,0 +1,46 @@
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+// 24시간 형식 ('09:00')을 읽기 쉬운 한국어 형식 ('오전 9:00')으로 변환
+export function formatTimeKorean(timeStr: string): string {
+  if (!timeStr) return "";
+  const [hourStr, minStr] = timeStr.split(":");
+  const hour = parseInt(hourStr, 10);
+  const period = hour < 12 ? "오전" : "오후";
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${period} ${displayHour}:${minStr}`;
+}
+
+// '2026-09-15' 형식을 '9월 15일 (화)' 형식으로 변환
+export function formatDateKorean(dateStr: string): string {
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  const days = ["일", "월", "화", "수", "목", "금", "토"];
+  return `${month}월 ${day}일 (${days[date.getDay()]})`;
+}
+
+// 타임 슬롯 생성 유틸리티 (start: '09:00', end: '22:00', step: 30분)
+export function generateTimeSlots(start: string, end: string, stepMinutes = 30): string[] {
+  const slots: string[] = [];
+  const [startH, startM] = start.split(":").map(Number);
+  const [endH, endM] = end.split(":").map(Number);
+
+  let currentMinutes = startH * 60 + startM;
+  const endMinutes = endH * 60 + endM;
+
+  while (currentMinutes < endMinutes) {
+    const h = Math.floor(currentMinutes / 60);
+    const m = currentMinutes % 60;
+    const timeString = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    slots.push(timeString);
+    currentMinutes += stepMinutes;
+  }
+
+  return slots;
+}
+
