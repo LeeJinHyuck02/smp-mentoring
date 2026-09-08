@@ -12,3 +12,4 @@ export async function verifyMentorPassword(inputPassword: string): Promise<boole
 
   return inputPassword.trim() === masterPassword.trim();
 }
+
