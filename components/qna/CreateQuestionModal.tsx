@@ -2,13 +2,13 @@
 
 import React, { useState } from "react";
 import { supabase } from "@/lib/supabase/client";
-import { Lock, User, Image as ImageIcon, X, Send, EyeOff, ShieldCheck, AlertCircle } from "lucide-react";
+import { Lock, User, Image as ImageIcon, X, Send, AlertCircle } from "lucide-react";
 
 interface CreateQuestionModalProps {
   isOpen: boolean;
   onClose: () => void;
   sectionId: string;
-  onSuccess: () => void;
+  onSuccess: (newQuestionId?: string) => void;
 }
 
 export default function CreateQuestionModal({
@@ -17,17 +17,11 @@ export default function CreateQuestionModal({
   sectionId,
   onSuccess,
 }: CreateQuestionModalProps) {
-  const [authorName, setAuthorName] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("smp_participant_name") || "";
-    }
-    return "";
-  });
+  const [authorName, setAuthorName] = useState("");
   const [pin, setPin] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isSecret, setIsSecret] = useState(false);
-  const [isAnonymous, setIsAnonymous] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -60,8 +54,8 @@ export default function CreateQuestionModal({
     setError(null);
 
     const trimmedName = authorName.trim();
-    if (!trimmedName && !isAnonymous) {
-      setError("작성자 이름을 입력해 주세요.");
+    if (!trimmedName) {
+      setError("작성자 이름을 입력해 주세요 (본인 글 조회 인증에 사용됩니다).");
       return;
     }
 
@@ -111,27 +105,27 @@ export default function CreateQuestionModal({
       }
 
       // 3. 질문 레코드 DB 삽입
-      const { error: insertError } = await supabase.from("questions").insert({
-        section_id: sectionId,
-        author_name: trimmedName || "익명 멘티",
-        pin_hash: pin, // DB 검증 함수에서 crypt 또는 단순 비교 지원
-        guest_token: guestToken,
-        title: title.trim(),
-        content: content.trim(),
-        image_urls: uploadedUrls,
-        is_secret: isSecret,
-        is_anonymous: isAnonymous,
-        status: "pending",
-      });
+      const { data: insertedData, error: insertError } = await supabase
+        .from("questions")
+        .insert({
+          section_id: sectionId,
+          author_name: trimmedName || "익명 멘티",
+          pin_hash: pin, // DB 검증 함수에서 crypt 또는 단순 비교 지원
+          guest_token: guestToken,
+          title: title.trim(),
+          content: content.trim(),
+          image_urls: uploadedUrls,
+          is_secret: isSecret,
+          is_anonymous: false,
+          status: "pending",
+        })
+        .select("id")
+        .single();
 
       if (insertError) throw insertError;
 
-      // 성공 시 로컬스토리지에 작성자 이름 및 본인 작성 질문 목록 저장
-      if (trimmedName) {
-        localStorage.setItem("smp_participant_name", trimmedName);
-      }
-
-      onSuccess();
+      // 브라우저 자동 로그인 및 기기 기억 기능 해제 (공용 PC/동일 브라우저 타인 혼선 방지)
+      onSuccess(insertedData?.id);
       onClose();
     } catch (err: any) {
       setError(err?.message || "질문 등록 중 오류가 발생했습니다.");
@@ -165,10 +159,10 @@ export default function CreateQuestionModal({
                 <User className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  required={!isAnonymous}
+                  required
                   value={authorName}
                   onChange={(e) => setAuthorName(e.target.value)}
-                  placeholder="예: 홍길동"
+                  placeholder="이름 또는 원하는 닉네임"
                   maxLength={20}
                   className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-xs sm:text-sm focus:border-indigo-500 outline-none transition"
                 />
@@ -264,8 +258,8 @@ export default function CreateQuestionModal({
             </div>
           </div>
 
-          {/* 옵션 선택: 비밀글 & 익명 */}
-          <div className="rounded-2xl bg-slate-50 p-3.5 border border-slate-200/80 space-y-2.5">
+          {/* 옵션 선택: 비밀 */}
+          <div className="rounded-2xl bg-slate-50 px-4 py-3 border border-slate-200/80">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -273,23 +267,7 @@ export default function CreateQuestionModal({
                 onChange={(e) => setIsSecret(e.target.checked)}
                 className="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4"
               />
-              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                <span>🔒 비밀글로 작성 (멘토와 나만 보기)</span>
-              </div>
-            </label>
-
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={isAnonymous}
-                onChange={(e) => setIsAnonymous(e.target.checked)}
-                className="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4"
-              />
-              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                <EyeOff className="w-4 h-4 text-slate-500" />
-                <span>🕶️ 익명으로 올리기 (작성자명을 '익명 멘티'로 마스킹)</span>
-              </div>
+              <span className="text-xs font-bold text-slate-800">🔒 비밀</span>
             </label>
           </div>
 

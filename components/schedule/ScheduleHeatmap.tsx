@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { formatTimeKorean, formatDayOrDateKorean, generateTimeSlots, isMentorBlockedSlot, cn } from "@/lib/utils";
 import { ScheduleSubmission } from "@/types/database";
-import { Users, Trophy, CheckCircle, Info, Sparkles } from "lucide-react";
+import { CheckCircle, Info } from "lucide-react";
 
 interface ScheduleHeatmapProps {
   dates: string[];
@@ -31,6 +31,17 @@ export default function ScheduleHeatmap({
   const timeSlots = generateTimeSlots(startTime, endTime, slotDuration);
   const totalCount = submissions.length;
 
+  const finalEndTimeStr = useMemo(() => {
+    if (endTime) return endTime;
+    if (!timeSlots || timeSlots.length === 0) return "";
+    const last = timeSlots[timeSlots.length - 1];
+    const [h, m] = last.split(":").map(Number);
+    const total = h * 60 + m + (slotDuration || 30);
+    const endH = Math.floor(total / 60);
+    const endM = total % 60;
+    return `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
+  }, [endTime, timeSlots, slotDuration]);
+
   // 슬롯별 참가 가능자 집계 맵
   const slotMap = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -53,36 +64,6 @@ export default function ScheduleHeatmap({
 
     return map;
   }, [dates, timeSlots, submissions]);
-
-  // 최적의 추천 시간대 (Top 3) 계산 (멘토 불가 시간은 원천 제외)
-  const topSlots = useMemo(() => {
-    if (totalCount === 0) return [];
-    const scoredSlots: { slotKey: string; count: number; date: string; time: string; names: string[] }[] = [];
-
-    slotMap.forEach((names, slotKey) => {
-      const [date, time] = slotKey.split("T");
-      // 월/목 13:00~18:00 등 멘토 불가 시간대는 추천에서 제외
-      if (isMentorBlockedSlot(date, time)) return;
-
-      if (names.length > 0) {
-        scoredSlots.push({
-          slotKey,
-          count: names.length,
-          date,
-          time,
-          names,
-        });
-      }
-    });
-
-    // 참가자 수 많은 순 -> 날짜 빠른 순 정렬
-    scoredSlots.sort((a, b) => {
-      if (b.count !== a.count) return b.count - a.count;
-      return a.slotKey.localeCompare(b.slotKey);
-    });
-
-    return scoredSlots.slice(0, 3);
-  }, [slotMap, totalCount]);
 
   // 히트맵 색상 단계 계산 (초록색 농도)
   const getCellColor = (count: number) => {
@@ -117,69 +98,8 @@ export default function ScheduleHeatmap({
 
   return (
     <div className="w-full">
-      {/* 1. 최적 시간 추천 Top 3 배너 */}
-      {topSlots.length > 0 && (
-        <div className="mb-6 rounded-2xl bg-gradient-to-br from-indigo-50 via-white to-emerald-50 p-4 sm:p-5 border border-indigo-100 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm">
-              <Trophy className="w-4 h-4" />
-            </span>
-            <h3 className="font-bold text-slate-800 text-sm sm:text-base">
-              추천 멘토링 시간대 (Top 3)
-            </h3>
-            <span className="ml-auto text-xs font-medium text-slate-500 flex items-center gap-1">
-              <Users className="w-3.5 h-3.5" /> 총 {totalCount}명 제출
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            {topSlots.map((item, index) => {
-              const isAll = item.count === totalCount;
-              return (
-                <div
-                  key={item.slotKey}
-                  onClick={() => setActiveSlot(item.slotKey)}
-                  className={cn(
-                    "cursor-pointer rounded-xl p-3 border transition-all hover:shadow-md active:scale-95 relative overflow-hidden",
-                    index === 0
-                      ? "bg-white border-emerald-300 ring-2 ring-emerald-500/20"
-                      : "bg-white/80 border-slate-200 hover:border-slate-300"
-                  )}
-                >
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className={cn(
-                      "font-extrabold px-1.5 py-0.5 rounded text-[11px]",
-                      index === 0 ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-600"
-                    )}>
-                      #{index + 1}위
-                    </span>
-                    <span className={cn(
-                      "font-bold text-xs",
-                      isAll ? "text-emerald-600 flex items-center gap-0.5" : "text-slate-600"
-                    )}>
-                      {isAll && <Sparkles className="w-3 h-3 text-emerald-500" />}
-                      {item.count}/{totalCount}명 가능
-                    </span>
-                  </div>
-                  <div className="font-bold text-sm text-slate-900 mt-1">
-                    {formatDayOrDateKorean(item.date)}
-                  </div>
-                  <div className="text-xs text-indigo-600 font-semibold mt-0.5">
-                    {formatTimeKorean(item.time)}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* 2. 히트맵 범례 및 가이드 */}
+      {/* 히트맵 범례 및 가이드 */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-        <div className="flex items-center gap-1">
-          <Info className="w-3.5 h-3.5 text-slate-400" />
-          <span>셀을 클릭하거나 마우스를 올리면 <strong>누가 가능한지</strong> 볼 수 있습니다.</span>
-        </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 mr-1.5">
             <span className="w-3.5 h-3.5 rounded bg-slate-100 border border-slate-200 inline-block" />
@@ -212,35 +132,26 @@ export default function ScheduleHeatmap({
             ))}
           </div>
 
-          {/* 행 */}
-          <div className="divide-y divide-slate-100 text-xs">
+          {/* 행 (시간 라벨이 30분 블록의 상단 모서리에 위치) */}
+          <div className="pt-3.5 pb-2 text-xs">
             {timeSlots.map((time) => {
               const isHour = time.endsWith(":00");
               return (
                 <div
                   key={time}
-                  className={cn("flex items-center", isHour ? "bg-slate-50/50" : "bg-white")}
+                  className="relative flex items-stretch h-10"
                 >
-                  <div className="w-16 sm:w-20 shrink-0 text-right pr-2 sm:pr-3 py-2 text-[11px] sm:text-xs font-medium text-slate-500">
-                    {formatTimeKorean(time)}
+                  {/* 시간 라벨: 줄이 글자를 가리지 않도록 시간 축 영역 분리 & bg-white 적용 */}
+                  <div className="w-16 sm:w-20 shrink-0 relative select-none pointer-events-none">
+                    <span className="absolute -top-2.5 right-2 sm:right-3 text-[11px] sm:text-xs font-medium text-slate-500 whitespace-nowrap bg-white px-1 z-10">
+                      {formatTimeKorean(time)}
+                    </span>
                   </div>
 
+                  {/* 날짜별 셀: 상단 경계선(border-t)이 시간의 눈금선이 되며 30분 블록을 빈틈없이 채움 */}
                   {dates.map((date) => {
                     const slotKey = `${date}T${time}`;
                     const isBlocked = isMentorBlockedSlot(date, time);
-
-                    if (isBlocked) {
-                      return (
-                        <div
-                          key={slotKey}
-                          className="flex-1 min-w-[76px] sm:min-w-[96px] h-9 mx-0.5 my-0.5 rounded border border-slate-200/80 bg-slate-100/90 text-slate-400 flex items-center justify-center cursor-not-allowed select-none text-[10px] font-semibold"
-                          title="멘토 불가능 시간 (월·목은 18시 이후 가능)"
-                        >
-                          멘토 불가
-                        </div>
-                      );
-                    }
-
                     const count = slotMap.get(slotKey)?.length || 0;
                     const isActive = activeSlot === slotKey;
                     const isConfirmed = confirmedSlot?.date === date && confirmedSlot?.start === time;
@@ -251,13 +162,19 @@ export default function ScheduleHeatmap({
                         onClick={() => setActiveSlot(slotKey)}
                         onMouseEnter={() => setActiveSlot(slotKey)}
                         className={cn(
-                          "flex-1 min-w-[76px] sm:min-w-[96px] h-9 mx-0.5 my-0.5 rounded transition-all duration-100 flex items-center justify-center cursor-pointer border select-none text-[11px]",
-                          getCellColor(count),
-                          isActive && "ring-2 ring-indigo-500 ring-offset-1 z-10 scale-105",
-                          isConfirmed && "ring-2 ring-amber-500 bg-amber-500 text-white font-extrabold"
+                          "flex-1 min-w-[76px] sm:min-w-[96px] h-full border-r border-slate-200/80 last:border-r-0 border-t flex items-center justify-center select-none text-[11px] transition-colors duration-100",
+                          isHour ? "border-t-slate-300" : "border-t-slate-200/60",
+                          isBlocked
+                            ? "bg-slate-100/90 text-slate-400 cursor-not-allowed font-semibold text-[10px]"
+                            : cn("cursor-pointer", getCellColor(count)),
+                          isActive && "ring-2 ring-indigo-500 ring-inset z-10 font-bold",
+                          isConfirmed && "bg-amber-500 text-white font-extrabold"
                         )}
+                        title={isBlocked ? "멘토 불가능 시간 (월·화·수·목은 18시 이후 가능)" : undefined}
                       >
-                        {isConfirmed ? (
+                        {isBlocked ? (
+                          "멘토 불가"
+                        ) : isConfirmed ? (
                           <span className="flex items-center gap-0.5 text-[10px]">
                             <CheckCircle className="w-3 h-3" /> 확정
                           </span>
@@ -272,6 +189,23 @@ export default function ScheduleHeatmap({
                 </div>
               );
             })}
+
+            {/* 마지막 블록 바닥 모서리에 종료 시각 라벨 및 마감선 표시 */}
+            {finalEndTimeStr && (
+              <div className="relative flex items-start h-4">
+                <div className="w-16 sm:w-20 shrink-0 relative select-none pointer-events-none">
+                  <span className="absolute -top-2.5 right-2 sm:right-3 text-[11px] sm:text-xs font-medium text-slate-400 whitespace-nowrap bg-white px-1 z-10">
+                    {formatTimeKorean(finalEndTimeStr)}
+                  </span>
+                </div>
+                {dates.map((date) => (
+                  <div
+                    key={date}
+                    className="flex-1 min-w-[76px] sm:min-w-[96px] border-t border-slate-300 border-r border-slate-200/80 last:border-r-0"
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -300,7 +234,7 @@ export default function ScheduleHeatmap({
                 className="rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 text-xs font-bold transition shadow-sm active:scale-95 flex items-center gap-1"
               >
                 <CheckCircle className="w-3.5 h-3.5" />
-                이 시간으로 최종 확정
+                이 시간으로 확정
               </button>
             )}
           </div>
@@ -310,7 +244,7 @@ export default function ScheduleHeatmap({
             <div className="rounded-lg bg-white p-3 border border-emerald-100">
               <div className="font-bold text-emerald-800 mb-1.5 flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                가능한 멘티 ({activeDetails.available.length}명)
+                참여 가능 ({activeDetails.available.length}명)
               </div>
               {activeDetails.available.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
@@ -324,7 +258,7 @@ export default function ScheduleHeatmap({
                   ))}
                 </div>
               ) : (
-                <span className="text-slate-400">가능한 인원이 없습니다.</span>
+                <span className="text-slate-400">가능한 인원 없음</span>
               )}
             </div>
 
@@ -332,7 +266,7 @@ export default function ScheduleHeatmap({
             <div className="rounded-lg bg-white p-3 border border-rose-100">
               <div className="font-bold text-rose-800 mb-1.5 flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                불가능한 멘티 ({activeDetails.unavailable.length}명)
+                참여 불가 ({activeDetails.unavailable.length}명)
               </div>
               {activeDetails.unavailable.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">

@@ -334,6 +334,9 @@ create policy "누구나 스케줄 제출 가능"
 create policy "스케줄 수정 가능"
   on public.schedule_submissions for update using (true);
 
+create policy "누구나 스케줄 제출 삭제 가능"
+  on public.schedule_submissions for delete using (true);
+
 -- 5.6 questions 정책 (비밀글 보호 강화)
 -- 테이블 직접 SELECT 시: 공개글이거나 멘토인 경우만 원본 반환 (비회원 비밀글은 unlock 함수 이용)
 create policy "공개 질문 또는 멘토의 전체 질문 조회"

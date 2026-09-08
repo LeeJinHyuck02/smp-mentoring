@@ -5,8 +5,9 @@ import { supabase } from "@/lib/supabase/client";
 import ScheduleGrid from "@/components/schedule/ScheduleGrid";
 import ScheduleHeatmap from "@/components/schedule/ScheduleHeatmap";
 import SubmissionModal from "@/components/schedule/SubmissionModal";
+import DeleteSubmissionModal from "@/components/schedule/DeleteSubmissionModal";
 import { SchedulePoll, ScheduleSubmission } from "@/types/database";
-import { Calendar, Users, BarChart3, CheckCircle2, Share2, Sparkles, Lock, AlertCircle } from "lucide-react";
+import { Calendar, Users, BarChart3, CheckCircle2, Share2, Sparkles, Lock, AlertCircle, Trash2 } from "lucide-react";
 
 // 데모용 기본 스케줄 데이터 (정기 멘토링: 월~금)
 const DEMO_POLL: SchedulePoll = {
@@ -71,6 +72,7 @@ export default function SchedulePage({
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
   const [submissions, setSubmissions] = useState<ScheduleSubmission[]>(INITIAL_DEMO_SUBMISSIONS);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteSubmissionModalOpen, setIsDeleteSubmissionModalOpen] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -177,6 +179,16 @@ export default function SchedulePage({
     setActiveTab("heatmap"); // 제출 완료 후 즉시 히트맵 결과로 전환
   };
 
+  // 시간 조율 제출 내역 삭제 모달 오픈 (이름 + PIN 확인 필수)
+  const handleDeleteSubmission = () => {
+    setIsDeleteSubmissionModalOpen(true);
+  };
+
+  // 시간 조율 투표 삭제 (멘토 대시보드 전용 안내)
+  const handleDeletePoll = () => {
+    alert("시간 조율 투표 삭제는 멘토 대시보드에서만 가능합니다.");
+  };
+
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(window.location.href);
@@ -237,7 +249,7 @@ export default function SchedulePage({
             }`}
           >
             <Calendar className="w-4 h-4" />
-            <span>1. 내 가능 시간 선택</span>
+            <span>내 가능 시간 선택</span>
             {selectedSlots.length > 0 && (
               <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-bold text-indigo-700">
                 {selectedSlots.length}
@@ -255,7 +267,7 @@ export default function SchedulePage({
             }`}
           >
             <BarChart3 className="w-4 h-4" />
-            <span>2. 실시간 취합 결과 (히트맵)</span>
+            <span>취합 결과 (히트맵)</span>
             <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
               {submissions.length}명 제출
             </span>
@@ -270,20 +282,19 @@ export default function SchedulePage({
                 <h2 className="text-base sm:text-lg font-bold text-slate-900">
                   {poll.title}
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  참석 가능한 시간을 선택하세요. 초록색으로 칠해진 시간이 제출할 시간입니다. (회원가입 불필요)
-                </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(true)}
-                disabled={selectedSlots.length === 0}
-                className="w-full sm:w-auto rounded-xl bg-indigo-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-indigo-700 transition active:scale-95 disabled:opacity-40 flex items-center justify-center gap-1.5"
-              >
-                <Sparkles className="w-4 h-4" />
-                {isSubmitted ? "내 시간표 수정 완료" : "내 시간표 제출하기"}
-              </button>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {selectedSlots.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSlots([])}
+                    className="rounded-xl border border-slate-200 bg-white hover:bg-slate-100 px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-600 transition active:scale-95 flex items-center gap-1"
+                  >
+                    <span>선택 초기화</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             <ScheduleGrid
@@ -294,6 +305,21 @@ export default function SchedulePage({
               selectedSlots={selectedSlots}
               onChange={poll.is_closed ? () => {} : setSelectedSlots}
             />
+
+            {/* 데스크톱용 하단 제출 버튼 */}
+            {!poll.is_closed && (
+              <div className="hidden sm:flex justify-end mt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  disabled={selectedSlots.length === 0}
+                  className="rounded-xl bg-indigo-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-indigo-700 transition active:scale-95 disabled:opacity-40 flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {isSubmitted ? "내 시간표 수정 완료" : "내 시간표 제출하기"}
+                </button>
+              </div>
+            )}
 
             {/* 하단 고정 제출 플로팅 버튼 (모바일 전용, 진행 중일 때만 표시) */}
             {!poll.is_closed && (
@@ -317,13 +343,25 @@ export default function SchedulePage({
         {/* 4. 탭 2: 취합 히트맵 결과 화면 */}
         {activeTab === "heatmap" && (
           <div>
-            <div className="mb-4">
-              <h2 className="text-base sm:text-lg font-bold text-slate-900">
-                멘토링 참여 가능 시간 종합 현황
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                색이 짙을수록 더 많은 멘티가 참석 가능한 황금 시간대입니다.
-              </p>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                  {poll.title}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  색이 짙을수록 참여 가능 인원이 많습니다.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsDeleteSubmissionModalOpen(true)}
+                className="rounded-xl border border-rose-200 bg-white hover:bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 transition active:scale-95 flex items-center gap-1 shadow-2xs"
+                title="내 제출 내역 삭제"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>내 제출 내역 삭제</span>
+              </button>
             </div>
 
             <ScheduleHeatmap
@@ -345,6 +383,34 @@ export default function SchedulePage({
         onSubmit={handleFormSubmit}
         selectedCount={selectedSlots.length}
         isEditMode={isSubmitted}
+      />
+
+      {/* 투표 내역 삭제 (이름 + PIN 확인 필수) 모달 */}
+      <DeleteSubmissionModal
+        isOpen={isDeleteSubmissionModalOpen}
+        onClose={() => setIsDeleteSubmissionModalOpen(false)}
+        pollId={pollId}
+        submissions={submissions}
+        onDeleted={(deletedName) => {
+          setSubmissions((prev) =>
+            prev.filter(
+              (s) =>
+                s.participant_name.trim().toLowerCase() !==
+                deletedName.toLowerCase()
+            )
+          );
+          const savedName =
+            typeof window !== "undefined"
+              ? localStorage.getItem("smp_participant_name")
+              : "";
+          if (
+            savedName &&
+            savedName.trim().toLowerCase() === deletedName.toLowerCase()
+          ) {
+            setSelectedSlots([]);
+            setIsSubmitted(false);
+          }
+        }}
       />
     </main>
   );

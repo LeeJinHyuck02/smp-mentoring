@@ -6,6 +6,7 @@ import { SchedulePoll, ScheduleSubmission } from "@/types/database";
 import ScheduleGrid from "@/components/schedule/ScheduleGrid";
 import ScheduleHeatmap from "@/components/schedule/ScheduleHeatmap";
 import SubmissionModal from "@/components/schedule/SubmissionModal";
+import DeleteSubmissionModal from "@/components/schedule/DeleteSubmissionModal";
 import QuestionBoard from "@/components/qna/QuestionBoard";
 import {
   Calendar,
@@ -18,6 +19,7 @@ import {
   AlertCircle,
   Share2,
   Lock,
+  Trash2,
 } from "lucide-react";
 
 export default function MenteeSectionPage({
@@ -28,8 +30,8 @@ export default function MenteeSectionPage({
   const resolvedParams = use(params);
   const { slug } = resolvedParams;
 
-  // 네비게이션 메인 탭: 'schedule' (시간 조율) vs 'qna' (질의응답)
-  const [activeMainTab, setActiveMainTab] = useState<"schedule" | "qna">("schedule");
+  // 네비게이션 메인 탭: 'qna' (질의응답 기본 첫 화면) vs 'schedule' (시간 조율)
+  const [activeMainTab, setActiveMainTab] = useState<"qna" | "schedule">("qna");
 
   // 스케줄러 서브 탭: 'input' (내 시간 입력) vs 'heatmap' (실시간 취합 결과)
   const [activeScheduleSubTab, setActiveScheduleSubTab] = useState<"input" | "heatmap">("input");
@@ -44,6 +46,7 @@ export default function MenteeSectionPage({
 
   // 모달 및 상태
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  const [isDeleteSubmissionModalOpen, setIsDeleteSubmissionModalOpen] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -163,6 +166,16 @@ export default function MenteeSectionPage({
     setActiveScheduleSubTab("heatmap"); // 제출 즉시 취합 결과로 전환
   };
 
+  // 시간 조율 제출 내역 삭제 모달 오픈 (이름 + PIN 확인 필수)
+  const handleDeleteSubmission = () => {
+    setIsDeleteSubmissionModalOpen(true);
+  };
+
+  // 시간 조율 투표 삭제 (멘토 대시보드 전용 안내)
+  const handleDeletePoll = () => {
+    alert("시간 조율 투표 삭제는 멘토 대시보드에서만 가능합니다.");
+  };
+
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(window.location.href);
@@ -229,21 +242,8 @@ export default function MenteeSectionPage({
       </header>
 
       <div className="mx-auto max-w-4xl px-4 pt-5 sm:px-6">
-        {/* 2. 메인 2대 탭: 🕒 시간 조율 vs 💬 Q&A 게시판 */}
+        {/* 2. 메인 2대 탭: 💬 Q&A 게시판 (기본 첫 화면) vs 🕒 시간 조율 */}
         <div className="mb-6 grid grid-cols-2 rounded-2xl bg-slate-200/80 p-1 shadow-inner">
-          <button
-            type="button"
-            onClick={() => setActiveMainTab("schedule")}
-            className={`flex items-center justify-center gap-2 rounded-xl py-3 text-xs sm:text-sm font-extrabold transition-all ${
-              activeMainTab === "schedule"
-                ? "bg-white text-indigo-600 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            <span>1. 멘토링 시간 조율</span>
-          </button>
-
           <button
             type="button"
             onClick={() => setActiveMainTab("qna")}
@@ -254,11 +254,29 @@ export default function MenteeSectionPage({
             }`}
           >
             <MessageSquare className="w-4 h-4" />
-            <span>2. 질문 게시판 (Q&A)</span>
+            <span>질문 게시판 (Q&A)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveMainTab("schedule")}
+            className={`flex items-center justify-center gap-2 rounded-xl py-3 text-xs sm:text-sm font-extrabold transition-all ${
+              activeMainTab === "schedule"
+                ? "bg-white text-indigo-600 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            <span>멘토링 시간 조율</span>
           </button>
         </div>
 
-        {/* 3. 탭 1 내용: 시간 조율 */}
+        {/* 3. 탭 1 내용: 질의응답 (Q&A) 게시판 (멘티 첫 화면) */}
+        {activeMainTab === "qna" && sectionData && (
+          <QuestionBoard sectionId={sectionData.id} isMentor={false} />
+        )}
+
+        {/* 4. 탭 2 내용: 시간 조율 */}
         {activeMainTab === "schedule" && (
           <div>
             {!poll && !isLoading ? (
@@ -285,7 +303,7 @@ export default function MenteeSectionPage({
                     }`}
                   >
                     <Clock className="w-3.5 h-3.5" />
-                    내 참석 가능 시간 칠하기
+                    내 가능 시간 선택
                     {selectedSlots.length > 0 && (
                       <span className="rounded-full bg-indigo-600 px-1.5 py-0.2 text-[10px] text-white font-bold">
                         {selectedSlots.length}
@@ -303,7 +321,7 @@ export default function MenteeSectionPage({
                     }`}
                   >
                     <BarChart3 className="w-3.5 h-3.5" />
-                    실시간 취합 결과 (히트맵)
+                    취합 결과 (히트맵)
                     <span className="rounded-full bg-emerald-100 text-emerald-800 px-1.5 py-0.2 text-[10px] font-bold">
                       {submissions.length}명
                     </span>
@@ -318,19 +336,21 @@ export default function MenteeSectionPage({
                           {poll.title}
                         </h2>
                         <p className="text-xs text-slate-500 mt-0.5">
-                          참석 가능한 요일과 시간대를 터치하거나 드래그하여 선택하세요.
+                          참석 가능한 시간을 선택하세요.
                         </p>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setIsSubmitModalOpen(true)}
-                        disabled={selectedSlots.length === 0}
-                        className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-indigo-700 transition active:scale-95 disabled:opacity-40 flex items-center gap-1"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        {isSubmitted ? "시간표 수정 완료" : "시간표 제출하기"}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {selectedSlots.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedSlots([])}
+                            className="rounded-xl border border-slate-200 bg-white hover:bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 transition active:scale-95 flex items-center gap-1"
+                          >
+                            <span>선택 초기화</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <ScheduleGrid
@@ -341,6 +361,19 @@ export default function MenteeSectionPage({
                       selectedSlots={selectedSlots}
                       onChange={setSelectedSlots}
                     />
+
+                    {/* 데스크톱용 하단 제출 버튼 */}
+                    <div className="hidden sm:flex justify-end mt-4">
+                      <button
+                        type="button"
+                        onClick={() => setIsSubmitModalOpen(true)}
+                        disabled={selectedSlots.length === 0}
+                        className="rounded-xl bg-indigo-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-indigo-700 transition active:scale-95 disabled:opacity-40 flex items-center gap-1.5"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        {isSubmitted ? "시간표 수정 완료" : "시간표 제출하기"}
+                      </button>
+                    </div>
 
                     {/* 모바일용 플로팅 제출 버튼 */}
                     <div className="fixed bottom-4 left-4 right-4 z-20 sm:hidden">
@@ -359,13 +392,25 @@ export default function MenteeSectionPage({
                   </div>
                 ) : (
                   <div>
-                    <div className="mb-4">
-                      <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
-                        {poll.title} - 취합 현황
-                      </h2>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        초록색이 짙을수록 더 많은 멘티가 참석 가능한 시간대입니다.
-                      </p>
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
+                          {poll.title}
+                        </h2>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          색이 짙을수록 참여 가능 인원이 많습니다.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsDeleteSubmissionModalOpen(true)}
+                        className="rounded-xl border border-rose-200 bg-white hover:bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 transition active:scale-95 flex items-center gap-1 shadow-2xs"
+                        title="내 제출 내역 삭제"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>내 제출 내역 삭제</span>
+                      </button>
                     </div>
 
                     <ScheduleHeatmap
@@ -382,11 +427,6 @@ export default function MenteeSectionPage({
             ) : null}
           </div>
         )}
-
-        {/* 4. 탭 2 내용: 질의응답 (Q&A) 게시판 */}
-        {activeMainTab === "qna" && sectionData && (
-          <QuestionBoard sectionId={sectionData.id} isMentor={false} />
-        )}
       </div>
 
       {/* 무회원가입 시간표 제출 모달 */}
@@ -397,6 +437,36 @@ export default function MenteeSectionPage({
         selectedCount={selectedSlots.length}
         isEditMode={isSubmitted}
       />
+
+      {/* 투표 내역 삭제 (이름 + PIN 확인 필수) 모달 */}
+      {poll && (
+        <DeleteSubmissionModal
+          isOpen={isDeleteSubmissionModalOpen}
+          onClose={() => setIsDeleteSubmissionModalOpen(false)}
+          pollId={poll.id}
+          submissions={submissions}
+          onDeleted={(deletedName) => {
+            setSubmissions((prev) =>
+              prev.filter(
+                (s) =>
+                  s.participant_name.trim().toLowerCase() !==
+                  deletedName.toLowerCase()
+              )
+            );
+            const savedName =
+              typeof window !== "undefined"
+                ? localStorage.getItem("smp_participant_name")
+                : "";
+            if (
+              savedName &&
+              savedName.trim().toLowerCase() === deletedName.toLowerCase()
+            ) {
+              setSelectedSlots([]);
+              setIsSubmitted(false);
+            }
+          }}
+        />
+      )}
     </main>
   );
 }

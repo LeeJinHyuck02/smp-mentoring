@@ -58,7 +58,7 @@ export function generateTimeSlots(start: string, end: string, stepMinutes = 30):
   return slots;
 }
 
-// 멘토링 가능 시간 체크: 월요일·목요일 13:00~18:00은 멘토 불가 블락 (18:00 이후만 가능)
+// 멘토링 가능 시간 체크: 월·화·수·목요일 13:00~18:00은 멘토 불가 블락 (18:00 이후만 가능)
 export function isMentorBlockedSlot(dayOrDate: string, time: string): boolean {
   if (!time) return false;
   const [hour, min] = time.split(":").map(Number);
@@ -72,11 +72,15 @@ export function isMentorBlockedSlot(dayOrDate: string, time: string): boolean {
 
   const clean = dayOrDate.trim();
 
-  // 요일 문자열 판별 (월, 목, Mon, Thu)
+  // 요일 문자열 판별 (월, 화, 수, 목)
   if (
     clean.includes("월") ||
+    clean.includes("화") ||
+    clean.includes("수") ||
     clean.includes("목") ||
     clean.startsWith("Mon") ||
+    clean.startsWith("Tue") ||
+    clean.startsWith("Wed") ||
     clean.startsWith("Thu")
   ) {
     return true;
@@ -88,7 +92,7 @@ export function isMentorBlockedSlot(dayOrDate: string, time: string): boolean {
       const [year, month, day] = clean.split("-").map(Number);
       const d = new Date(year, month - 1, day);
       const dayOfWeek = d.getDay();
-      return dayOfWeek === 1 || dayOfWeek === 4; // 1 = 월, 4 = 목
+      return dayOfWeek >= 1 && dayOfWeek <= 4; // 1 = 월, 2 = 화, 3 = 수, 4 = 목
     } catch {}
   }
 

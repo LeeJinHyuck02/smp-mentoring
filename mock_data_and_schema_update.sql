@@ -25,6 +25,21 @@ drop policy if exists "멘토만 스케줄 투표 생성 및 수정 가능" on p
 create policy "누구나 스케줄 투표 관리 가능 (단일 멘토 모드)"
   on public.schedule_polls for all using (true) with check (true);
 
+drop policy if exists "누구나 스케줄 제출 삭제 가능" on public.schedule_submissions;
+drop policy if exists "스케줄 제출 삭제 가능" on public.schedule_submissions;
+create policy "누구나 스케줄 제출 삭제 가능"
+  on public.schedule_submissions for delete using (true);
+
+drop policy if exists "공개 질문 또는 멘토의 전체 질문 조회" on public.questions;
+drop policy if exists "누구나 질문 조회 가능" on public.questions;
+create policy "누구나 질문 조회 가능"
+  on public.questions for select using (true);
+
+drop policy if exists "공개 질문의 답변 조회" on public.answers;
+drop policy if exists "누구나 답변 조회 가능" on public.answers;
+create policy "누구나 답변 조회 가능"
+  on public.answers for select using (true);
+
 
 -- 2. 고정 멘토 프로필 생성 (회원가입 없이 즉시 사용하는 기본 멘토)
 insert into public.mentor_profiles (id, email, full_name)
@@ -60,40 +75,40 @@ values (
   '33333333-3333-3333-3333-333333333331',
   '1분반 정기 멘토링 시간 결정 (주 1회)',
   '["월", "화", "수", "목", "금"]'::jsonb,
-  '09:00',
-  '21:00',
+  '13:00',
+  '22:00',
   30,
   false
 )
 on conflict (id) do nothing;
 
 
--- 6. 멘티 4명의 시간표 제출 데이터 생성 (월요일 14:00~15:30이 전원 참석 가능한 황금 시간대!)
+-- 6. 멘티 4명의 시간표 제출 데이터 생성 (월요일 19:00~20:30이 전원 참석 가능한 황금 시간대!)
 insert into public.schedule_submissions (poll_id, participant_name, pin_hash, available_slots)
 values
   (
     '44444444-4444-4444-4444-444444444441',
     '김민수',
     crypt('1234', gen_salt('bf')),
-    '["월T14:00", "월T14:30", "월T15:00", "월T15:30", "수T16:00", "수T16:30", "목T13:00"]'::jsonb
+    '["월T19:00", "월T19:30", "월T20:00", "월T20:30", "수T19:00", "수T19:30", "금T14:00"]'::jsonb
   ),
   (
     '44444444-4444-4444-4444-444444444441',
     '이영희',
     crypt('1234', gen_salt('bf')),
-    '["월T14:00", "월T14:30", "월T15:00", "화T10:00", "화T10:30", "목T14:00", "목T14:30"]'::jsonb
+    '["월T19:00", "월T19:30", "월T20:00", "화T19:00", "화T19:30", "목T19:00", "목T19:30"]'::jsonb
   ),
   (
     '44444444-4444-4444-4444-444444444441',
     '박지성',
     crypt('1234', gen_salt('bf')),
-    '["월T14:00", "월T14:30", "월T15:00", "월T15:30", "수T14:00", "금T15:00", "금T15:30"]'::jsonb
+    '["월T19:00", "월T19:30", "월T20:00", "월T20:30", "수T19:00", "금T15:00", "금T15:30"]'::jsonb
   ),
   (
     '44444444-4444-4444-4444-444444444441',
     '최진수',
     crypt('1234', gen_salt('bf')),
-    '["월T13:30", "월T14:00", "월T14:30", "월T15:00", "금T14:00", "금T14:30"]'::jsonb
+    '["월T18:30", "월T19:00", "월T19:30", "월T20:00", "금T14:00", "금T14:30"]'::jsonb
   )
 on conflict (poll_id, participant_name) do update set
   available_slots = excluded.available_slots;

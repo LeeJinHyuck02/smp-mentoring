@@ -24,6 +24,7 @@ import {
   Lock,
   ToggleLeft,
   ToggleRight,
+  Trash2,
 } from "lucide-react";
 
 export const DEFAULT_MENTOR_ID = "00000000-0000-0000-0000-000000000001";
@@ -148,6 +149,25 @@ export default function MentorDashboard({ onLogout }: MentorDashboardProps) {
     }
   };
 
+  // 시간 조율 투표 삭제 핸들러
+  const handleDeletePoll = async (pollId: string, pollTitle: string) => {
+    if (
+      !window.confirm(
+        `"${pollTitle}" 시간 조율 투표를 정말 삭제하시겠습니까?\n제출된 학생들의 시간표 데이터도 함께 영구 삭제됩니다.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from("schedule_polls").delete().eq("id", pollId);
+      if (error) throw error;
+      loadData();
+    } catch (err: any) {
+      alert("시간 조율 삭제 중 오류가 발생했습니다: " + err.message);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-slate-50 pb-20">
       {/* 1. 상단 글로벌 헤더 */}
@@ -161,10 +181,6 @@ export default function MentorDashboard({ onLogout }: MentorDashboardProps) {
               <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight">
                 멘토 워크스페이스
               </h1>
-              <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                단일 멘토 모드 (비밀번호 보호됨)
-              </span>
             </div>
           </div>
 
@@ -322,7 +338,7 @@ export default function MentorDashboard({ onLogout }: MentorDashboardProps) {
                                 ) : (
                                   <>
                                     <Share2 className="w-3 h-3 text-slate-500" />
-                                    <span>단톡방 링크 복사</span>
+                                    <span>링크 복사</span>
                                   </>
                                 )}
                               </button>
@@ -358,13 +374,23 @@ export default function MentorDashboard({ onLogout }: MentorDashboardProps) {
                                           </div>
                                         </div>
 
-                                        <Link
-                                          href={pollUrl}
-                                          className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 text-xs font-bold text-indigo-700 transition active:scale-95"
-                                        >
-                                          <span>히트맵 보기</span>
-                                          <ExternalLink className="w-3 h-3" />
-                                        </Link>
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                          <Link
+                                            href={pollUrl}
+                                            className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 text-xs font-bold text-indigo-700 transition active:scale-95"
+                                          >
+                                            <span>히트맵 보기</span>
+                                            <ExternalLink className="w-3 h-3" />
+                                          </Link>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleDeletePoll(poll.id, poll.title)}
+                                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition active:scale-95"
+                                            title="시간 조율 투표 삭제"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
                                       </div>
                                     );
                                   })}

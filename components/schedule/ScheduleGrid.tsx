@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { formatTimeKorean, formatDayOrDateKorean, generateTimeSlots, isMentorBlockedSlot, cn } from "@/lib/utils";
-import { Check, Sparkles, RotateCcw, Clock } from "lucide-react";
+import { Check, Clock } from "lucide-react";
 
 interface ScheduleGridProps {
   dates: string[]; // e.g. ["2026-09-15", "2026-09-16", ...]
@@ -95,7 +95,8 @@ export default function ScheduleGrid({
     const touch = e.touches[0];
     const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
     if (targetElement) {
-      const slotKey = targetElement.getAttribute("data-slot");
+      const slotEl = targetElement.closest("[data-slot]");
+      const slotKey = slotEl?.getAttribute("data-slot");
       if (slotKey) {
         const [day, time] = slotKey.split("T");
         if (!isMentorBlockedSlot(day, time)) {
@@ -107,21 +108,6 @@ export default function ScheduleGrid({
 
   const handleTouchEnd = () => {
     setIsDragging(false);
-  };
-
-  // 빠른 선택 프리셋 (멘토 불가 슬롯 제외하고 선택)
-  const selectRangeForDate = (date: string, startH: number, endH: number) => {
-    if (isReadOnly) return;
-    const newSet = new Set(selectedSet);
-    timeSlots.forEach((time) => {
-      const [h] = time.split(":").map(Number);
-      if (h >= startH && h < endH) {
-        if (!isMentorBlockedSlot(date, time)) {
-          newSet.add(`${date}T${time}`);
-        }
-      }
-    });
-    onChange(Array.from(newSet));
   };
 
   const toggleFullDay = (date: string) => {
@@ -143,55 +129,25 @@ export default function ScheduleGrid({
     onChange(Array.from(newSet));
   };
 
-  const clearAll = () => {
-    if (isReadOnly) return;
-    onChange([]);
-  };
+  const finalEndTimeStr = React.useMemo(() => {
+    if (endTime) return endTime;
+    if (!timeSlots || timeSlots.length === 0) return "";
+    const last = timeSlots[timeSlots.length - 1];
+    const [h, m] = last.split(":").map(Number);
+    const total = h * 60 + m + (slotDuration || 30);
+    const endH = Math.floor(total / 60);
+    const endM = total % 60;
+    return `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
+  }, [endTime, timeSlots, slotDuration]);
 
   return (
     <div className="w-full select-none" ref={gridRef}>
-      {/* 멘티 빠른 프리셋 버튼 모음 (모바일 친화) */}
-      {!isReadOnly && (
-        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-indigo-50/70 p-3 border border-indigo-100">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-900 mr-2">
-            <Sparkles className="w-4 h-4 text-indigo-600" />
-            빠른 선택:
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              dates.forEach((d) => selectRangeForDate(d, 13, 18));
-            }}
-            className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm border border-slate-200 hover:bg-slate-50 transition active:scale-95"
-          >
-            오후 (13~18시) 선택
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              dates.forEach((d) => selectRangeForDate(d, 18, 22));
-            }}
-            className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm border border-slate-200 hover:bg-slate-50 transition active:scale-95"
-          >
-            야간 (18~22시) 전체 선택
-          </button>
-          <button
-            type="button"
-            onClick={clearAll}
-            className="ml-auto inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 transition active:scale-95"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            전체 비우기
-          </button>
-        </div>
-      )}
-
-      {/* 멘토 일정 안내 배지 */}
-      <div className="mb-3 rounded-xl bg-slate-100 border border-slate-200 px-3.5 py-2.5 text-xs text-slate-600 flex items-center justify-between gap-2 flex-wrap">
+      {/* 멘토 일정 안내 & 범례 */}
+      <div className="mb-3 rounded-xl bg-slate-100/90 border border-slate-200 px-3.5 py-2.5 text-xs text-slate-600 flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-1.5 font-medium">
           <Clock className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
           <span>
-            멘토 가능 시간: <strong>13시 이후</strong> (단, <strong>월·목요일은 18시 이후</strong>만 가능)
+            멘토 가능: <strong>월~목 18시 이후</strong> · <strong>금~일 13시 이후</strong>
           </span>
         </div>
         <div className="flex items-center gap-2 text-[11px] text-slate-500">
@@ -232,9 +188,9 @@ export default function ScheduleGrid({
             ))}
           </div>
 
-          {/* 시간표 매트릭스 그리드 */}
+          {/* 시간표 매트릭스 그리드: 시간 라벨이 30분 블록의 상단 모서리(선)에 위치 */}
           <div
-            className="divide-y divide-slate-100 text-xs"
+            className="pt-3.5 pb-2 text-xs"
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
@@ -243,35 +199,20 @@ export default function ScheduleGrid({
               return (
                 <div
                   key={time}
-                  className={cn(
-                    "flex items-center",
-                    isHour ? "bg-slate-50/50" : "bg-white"
-                  )}
+                  className="relative flex items-stretch h-10"
                 >
-                  {/* 시간 라벨 */}
-                  <div className="w-16 sm:w-20 shrink-0 text-right pr-2 sm:pr-3 py-2 text-[11px] sm:text-xs font-medium text-slate-500">
-                    {formatTimeKorean(time)}
+                  {/* 시간 라벨: 줄이 글자를 가리지 않도록 시간 축 영역 분리 & bg-white 적용 */}
+                  <div className="w-16 sm:w-20 shrink-0 relative select-none pointer-events-none">
+                    <span className="absolute -top-2.5 right-2 sm:right-3 text-[11px] sm:text-xs font-medium text-slate-500 whitespace-nowrap bg-white px-1 z-10">
+                      {formatTimeKorean(time)}
+                    </span>
                   </div>
 
-                  {/* 날짜별 셀 */}
+                  {/* 날짜별 셀: 상단 경계선(border-t)이 시간의 눈금선이 되며 30분 블록을 빈틈없이 채움 */}
                   {dates.map((date) => {
                     const slotKey = `${date}T${time}`;
                     const isSelected = selectedSet.has(slotKey);
                     const isBlocked = isMentorBlockedSlot(date, time);
-
-                    if (isBlocked) {
-                      return (
-                        <div
-                          key={slotKey}
-                          className="flex-1 min-w-[76px] sm:min-w-[96px] h-9 mx-0.5 my-0.5 rounded border border-slate-200/80 bg-slate-100/90 text-slate-400 flex flex-col items-center justify-center cursor-not-allowed select-none transition-all"
-                          title="멘토 불가능 시간 (월·목은 18시 이후 가능)"
-                        >
-                          <span className="text-[10px] font-semibold text-slate-400">
-                            멘토 불가
-                          </span>
-                        </div>
-                      );
-                    }
 
                     return (
                       <div
@@ -281,20 +222,45 @@ export default function ScheduleGrid({
                         onMouseEnter={() => handleMouseEnter(slotKey)}
                         onTouchStart={(e) => handleTouchStart(e, slotKey)}
                         className={cn(
-                          "flex-1 min-w-[76px] sm:min-w-[96px] h-9 mx-0.5 my-0.5 rounded transition-all duration-75 flex items-center justify-center cursor-pointer border select-none",
-                          isSelected
-                            ? "bg-emerald-500 border-emerald-600 text-white shadow-sm font-semibold scale-[0.98]"
-                            : "bg-slate-50/80 border-slate-200/80 hover:bg-emerald-50 hover:border-emerald-300 text-slate-400",
-                          isReadOnly && "cursor-default hover:bg-transparent"
+                          "flex-1 min-w-[76px] sm:min-w-[96px] h-full border-r border-slate-200/80 last:border-r-0 border-t flex items-center justify-center select-none transition-colors duration-75",
+                          isHour ? "border-t-slate-300" : "border-t-slate-200/60",
+                          isBlocked
+                            ? "bg-slate-100/90 text-slate-400 cursor-not-allowed text-[10px] font-semibold"
+                            : isSelected
+                            ? "bg-emerald-500 text-white font-bold cursor-pointer"
+                            : "bg-white hover:bg-emerald-50/70 text-slate-400 cursor-pointer",
+                          isReadOnly && !isBlocked && "cursor-default hover:bg-transparent"
                         )}
+                        title={isBlocked ? "멘토 불가 (월~목 18시 이후 가능)" : undefined}
                       >
-                        {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                        {isBlocked ? (
+                          <span className="pointer-events-none">멘토 불가</span>
+                        ) : isSelected ? (
+                          <Check className="w-3.5 h-3.5 stroke-[3] pointer-events-none" />
+                        ) : null}
                       </div>
                     );
                   })}
                 </div>
               );
             })}
+
+            {/* 마지막 블록 바닥 모서리에 종료 시각 라벨 및 마감선 표시 */}
+            {finalEndTimeStr && (
+              <div className="relative flex items-start h-4">
+                <div className="w-16 sm:w-20 shrink-0 relative select-none pointer-events-none">
+                  <span className="absolute -top-2.5 right-2 sm:right-3 text-[11px] sm:text-xs font-medium text-slate-400 whitespace-nowrap bg-white px-1 z-10">
+                    {formatTimeKorean(finalEndTimeStr)}
+                  </span>
+                </div>
+                {dates.map((date) => (
+                  <div
+                    key={date}
+                    className="flex-1 min-w-[76px] sm:min-w-[96px] border-t border-slate-300 border-r border-slate-200/80 last:border-r-0"
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -303,7 +269,7 @@ export default function ScheduleGrid({
       {!isReadOnly && (
         <div className="mt-3 flex items-center justify-between text-xs sm:text-sm text-slate-600 font-medium px-1">
           <span>
-            선택된 타임슬롯:{" "}
+            선택된 시간:{" "}
             <strong className="text-emerald-600 text-base">
               {selectedSlots.length}개
             </strong>{" "}

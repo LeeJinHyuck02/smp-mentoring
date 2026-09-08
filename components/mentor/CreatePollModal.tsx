@@ -27,7 +27,7 @@ export default function CreatePollModal({
   const [title, setTitle] = useState("정기 멘토링 시간 결정");
   const [selectedDays, setSelectedDays] = useState<string[]>(["월", "화", "수", "목", "금"]);
   const [startTime, setStartTime] = useState("13:00");
-  const [endTime, setEndTime] = useState("21:00");
+  const [endTime, setEndTime] = useState("22:00");
   const [slotDuration, setSlotDuration] = useState<number>(30);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
