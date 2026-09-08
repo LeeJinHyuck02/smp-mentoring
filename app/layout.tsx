@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "SMP - 대학생 멘토링 플랫폼",
-  description: "멘토와 멘티를 위한 스마트 시간 조율 및 Q&A 플랫폼",
+  description: "멘토와 멘티를 위한 초간편 무회원가입 시간 조율 및 Q&A 올인원 플랫폼",
 };
 
 export const viewport: Viewport = {
