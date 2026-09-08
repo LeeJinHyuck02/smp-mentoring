@@ -499,26 +499,26 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
 
   return (
     <div className="w-full">
-      {/* 상단 컨트롤 바 */}
+      {/* 상단 컨트롤 바 (1열 3버튼화: 탭 + 질문하기) */}
       <div className="mb-4 flex items-center justify-between gap-2 pb-1">
         {/* 좌측: 토글 탭 (멘티 모드일 때 전체/내가 쓴 질문 토글, 멘토 모드일 때 전체 질문 수) */}
         {!isMentor ? (
-          <div className="flex rounded-2xl bg-slate-100 p-1">
+          <div className="flex rounded-2xl bg-slate-100 p-1 w-fit">
             <button
               type="button"
               onClick={() => setFilterTab("all")}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
+              className={`rounded-xl px-3 sm:px-3.5 py-1.5 text-xs font-bold transition whitespace-nowrap ${
                 filterTab === "all"
                   ? "bg-white text-indigo-700 shadow-xs"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              전체 질문 ({visibleQuestions.length})
+              전체({visibleQuestions.length})
             </button>
             <button
               type="button"
               onClick={() => setFilterTab("mine")}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`rounded-xl px-3 sm:px-3.5 py-1.5 text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
                 filterTab === "mine"
                   ? "bg-white text-indigo-700 shadow-xs"
                   : "text-slate-600 hover:text-slate-900"
@@ -534,39 +534,21 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
           </div>
         ) : (
           <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-            <span className="inline-flex items-center rounded-xl bg-indigo-50 px-3 py-1.5 text-indigo-700 border border-indigo-100 font-semibold">
-              전체 질문 {questions.length}개
+            <span className="inline-flex items-center rounded-xl bg-indigo-50 px-3 py-1.5 text-indigo-700 border border-indigo-100 font-semibold whitespace-nowrap">
+              전체 {questions.length}개
             </span>
           </div>
         )}
 
-        {/* 우측: 내 질문 찾기 & 질문하기 액션 버튼 */}
-        <div className="flex items-center gap-2">
-          {!isMentor && (
-            <button
-              type="button"
-              onClick={() => {
-                setIsFindModalOpen(true);
-                setFindName("");
-                setFindPin("");
-                setFindError(null);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition active:scale-95"
-            >
-              <Search className="w-3.5 h-3.5 text-slate-400" />
-              <span>내 질문 찾기</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            <span>질문하기</span>
-          </button>
-        </div>
+        {/* 우측: 질문하기 액션 버튼 */}
+        <button
+          type="button"
+          onClick={() => setIsCreateModalOpen(true)}
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition active:scale-95 whitespace-nowrap shrink-0"
+        >
+          <Plus className="w-4 h-4 shrink-0" />
+          <span>질문하기</span>
+        </button>
       </div>
 
       {/* 질문 목록 */}
@@ -574,12 +556,6 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
         filterTab === "mine" ? (
           <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-white p-10 text-center my-6">
             <Search className="mx-auto h-10 w-10 text-slate-300 mb-2" />
-            <h3 className="text-sm font-bold text-slate-800">
-              열람 인증된 본인 질문이 없습니다.
-            </h3>
-            <p className="mt-1 text-xs text-slate-500">
-              작성하신 질문은 아래 [내 질문 찾기] 버튼을 통해 언제든 이름과 비밀번호로 조회할 수 있습니다.
-            </p>
             <button
               type="button"
               onClick={() => {
@@ -591,7 +567,7 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
               className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition active:scale-95"
             >
               <Search className="w-3.5 h-3.5" />
-              <span>이름 + 비밀번호로 내 질문 찾기</span>
+              <span>내 질문 찾기</span>
             </button>
           </div>
         ) : (
@@ -614,6 +590,24 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
         )
       ) : (
         <div className="space-y-4">
+          {!isMentor && filterTab === "mine" && (
+            <div className="flex items-center justify-between px-1 pb-1 text-xs text-slate-500">
+              <span>인증된 내 질문 <strong>{displayedQuestions.length}</strong>개</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsFindModalOpen(true);
+                  setFindName("");
+                  setFindPin("");
+                  setFindError(null);
+                }}
+                className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-semibold transition active:scale-95 text-xs"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>다른 내 질문 찾기</span>
+              </button>
+            </div>
+          )}
           {displayedQuestions.map((q) => {
             const hasAccess = canViewSecret(q);
             const answers = answersMap[q.id] || [];

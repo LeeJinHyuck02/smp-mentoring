@@ -277,26 +277,6 @@ export default function SchedulePage({
         {/* 3. 탭 1: 시간 선택 화면 */}
         {activeTab === "input" && (
           <div>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base sm:text-lg font-bold text-slate-900">
-                  {poll.title}
-                </h2>
-              </div>
-
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                {selectedSlots.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSlots([])}
-                    className="rounded-xl border border-slate-200 bg-white hover:bg-slate-100 px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-600 transition active:scale-95 flex items-center gap-1"
-                  >
-                    <span>선택 초기화</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
             <ScheduleGrid
               dates={poll.dates}
               startTime={poll.start_time}
@@ -304,6 +284,17 @@ export default function SchedulePage({
               slotDuration={poll.slot_duration}
               selectedSlots={selectedSlots}
               onChange={poll.is_closed ? () => {} : setSelectedSlots}
+              headerAction={
+                selectedSlots.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSlots([])}
+                    className="rounded-lg border border-slate-300 bg-white hover:bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 transition active:scale-95 flex items-center gap-0.5 whitespace-nowrap"
+                  >
+                    <span>선택 초기화</span>
+                  </button>
+                ) : null
+              }
             />
 
             {/* 데스크톱용 하단 제출 버튼 */}
@@ -343,27 +334,6 @@ export default function SchedulePage({
         {/* 4. 탭 2: 취합 히트맵 결과 화면 */}
         {activeTab === "heatmap" && (
           <div>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h2 className="text-base sm:text-lg font-bold text-slate-900">
-                  {poll.title}
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  색이 짙을수록 참여 가능 인원이 많습니다.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsDeleteSubmissionModalOpen(true)}
-                className="rounded-xl border border-rose-200 bg-white hover:bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 transition active:scale-95 flex items-center gap-1 shadow-2xs"
-                title="내 제출 내역 삭제"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>내 제출 내역 삭제</span>
-              </button>
-            </div>
-
             <ScheduleHeatmap
               dates={poll.dates}
               startTime={poll.start_time}
@@ -371,6 +341,17 @@ export default function SchedulePage({
               slotDuration={poll.slot_duration}
               submissions={submissions}
               confirmedSlot={poll.confirmed_slot}
+              headerAction={
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteSubmissionModalOpen(true)}
+                  className="rounded-xl border border-rose-200 bg-white hover:bg-rose-50 px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold text-rose-600 transition active:scale-95 flex items-center gap-1 shadow-2xs whitespace-nowrap"
+                  title="내 제출 내역 삭제"
+                >
+                  <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>내 제출 내역 삭제</span>
+                </button>
+              }
             />
           </div>
         )}

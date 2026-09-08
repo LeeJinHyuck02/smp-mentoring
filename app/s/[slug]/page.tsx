@@ -254,7 +254,7 @@ export default function MenteeSectionPage({
             }`}
           >
             <MessageSquare className="w-4 h-4" />
-            <span>질문 게시판 (Q&A)</span>
+            <span>Q&A</span>
           </button>
 
           <button
@@ -267,7 +267,7 @@ export default function MenteeSectionPage({
             }`}
           >
             <Calendar className="w-4 h-4" />
-            <span>멘토링 시간 조율</span>
+            <span>시간 조율</span>
           </button>
         </div>
 
@@ -303,7 +303,7 @@ export default function MenteeSectionPage({
                     }`}
                   >
                     <Clock className="w-3.5 h-3.5" />
-                    내 가능 시간 선택
+                    가능 시간 선택
                     {selectedSlots.length > 0 && (
                       <span className="rounded-full bg-indigo-600 px-1.5 py-0.2 text-[10px] text-white font-bold">
                         {selectedSlots.length}
@@ -321,7 +321,7 @@ export default function MenteeSectionPage({
                     }`}
                   >
                     <BarChart3 className="w-3.5 h-3.5" />
-                    취합 결과 (히트맵)
+                    선택 결과
                     <span className="rounded-full bg-emerald-100 text-emerald-800 px-1.5 py-0.2 text-[10px] font-bold">
                       {submissions.length}명
                     </span>
@@ -330,29 +330,6 @@ export default function MenteeSectionPage({
 
                 {activeScheduleSubTab === "input" ? (
                   <div>
-                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
-                          {poll.title}
-                        </h2>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          참석 가능한 시간을 선택하세요.
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {selectedSlots.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setSelectedSlots([])}
-                            className="rounded-xl border border-slate-200 bg-white hover:bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 transition active:scale-95 flex items-center gap-1"
-                          >
-                            <span>선택 초기화</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
                     <ScheduleGrid
                       dates={poll.dates}
                       startTime={poll.start_time}
@@ -360,6 +337,17 @@ export default function MenteeSectionPage({
                       slotDuration={poll.slot_duration}
                       selectedSlots={selectedSlots}
                       onChange={setSelectedSlots}
+                      headerAction={
+                        selectedSlots.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedSlots([])}
+                            className="rounded-lg border border-slate-300 bg-white hover:bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 transition active:scale-95 flex items-center gap-0.5 whitespace-nowrap"
+                          >
+                            <span>선택 초기화</span>
+                          </button>
+                        ) : null
+                      }
                     />
 
                     {/* 데스크톱용 하단 제출 버튼 */}
@@ -392,27 +380,6 @@ export default function MenteeSectionPage({
                   </div>
                 ) : (
                   <div>
-                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
-                          {poll.title}
-                        </h2>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          색이 짙을수록 참여 가능 인원이 많습니다.
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setIsDeleteSubmissionModalOpen(true)}
-                        className="rounded-xl border border-rose-200 bg-white hover:bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 transition active:scale-95 flex items-center gap-1 shadow-2xs"
-                        title="내 제출 내역 삭제"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>내 제출 내역 삭제</span>
-                      </button>
-                    </div>
-
                     <ScheduleHeatmap
                       dates={poll.dates}
                       startTime={poll.start_time}
@@ -420,6 +387,17 @@ export default function MenteeSectionPage({
                       slotDuration={poll.slot_duration}
                       submissions={submissions}
                       confirmedSlot={poll.confirmed_slot}
+                      headerAction={
+                        <button
+                          type="button"
+                          onClick={() => setIsDeleteSubmissionModalOpen(true)}
+                          className="rounded-xl border border-rose-200 bg-white hover:bg-rose-50 px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold text-rose-600 transition active:scale-95 flex items-center gap-1 shadow-2xs whitespace-nowrap"
+                          title="내 제출 내역 삭제"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                          <span>내 제출 내역 삭제</span>
+                        </button>
+                      }
                     />
                   </div>
                 )}

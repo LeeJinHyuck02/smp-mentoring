@@ -14,6 +14,7 @@ interface ScheduleHeatmapProps {
   confirmedSlot?: { date: string; start: string; end?: string } | null;
   onConfirmSlot?: (date: string, time: string) => void;
   isMentor?: boolean;
+  headerAction?: React.ReactNode;
 }
 
 export default function ScheduleHeatmap({
@@ -25,6 +26,7 @@ export default function ScheduleHeatmap({
   confirmedSlot,
   onConfirmSlot,
   isMentor = false,
+  headerAction,
 }: ScheduleHeatmapProps) {
   const [activeSlot, setActiveSlot] = useState<string | null>(null);
 
@@ -98,34 +100,36 @@ export default function ScheduleHeatmap({
 
   return (
     <div className="w-full">
-      {/* 히트맵 범례 및 가이드 */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 mr-1.5">
-            <span className="w-3.5 h-3.5 rounded bg-slate-100 border border-slate-200 inline-block" />
+      {/* 히트맵 범례 및 상단 액션 바 */}
+      <div className="mb-3 flex items-center justify-between gap-2 text-xs text-slate-500">
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+          <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-slate-500 mr-1 sm:mr-1.5 whitespace-nowrap">
+            <span className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded bg-slate-100 border border-slate-200 inline-block shrink-0" />
             멘토 불가
           </span>
-          <span className="text-[11px] text-slate-400">적음</span>
-          <span className="w-3.5 h-3.5 rounded bg-slate-100 border border-slate-200"></span>
-          <span className="w-3.5 h-3.5 rounded bg-emerald-100 border border-emerald-200"></span>
-          <span className="w-3.5 h-3.5 rounded bg-emerald-300 border border-emerald-400"></span>
-          <span className="w-3.5 h-3.5 rounded bg-emerald-500 border border-emerald-600"></span>
-          <span className="w-3.5 h-3.5 rounded bg-emerald-600 border border-emerald-700"></span>
-          <span className="text-[11px] text-emerald-700 font-bold">전원 가능</span>
+          <span className="text-[10px] sm:text-[11px] text-slate-400 whitespace-nowrap">적음</span>
+          <span className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded bg-slate-100 border border-slate-200 shrink-0"></span>
+          <span className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded bg-emerald-100 border border-emerald-200 shrink-0"></span>
+          <span className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded bg-emerald-300 border border-emerald-400 shrink-0"></span>
+          <span className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded bg-emerald-500 border border-emerald-600 shrink-0"></span>
+          <span className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded bg-emerald-600 border border-emerald-700 shrink-0"></span>
+          <span className="text-[10px] sm:text-[11px] text-emerald-700 font-bold whitespace-nowrap">전원 가능</span>
         </div>
+
+        {headerAction && <div className="shrink-0">{headerAction}</div>}
       </div>
 
       {/* 3. 메인 히트맵 그리드 */}
       <div className="overflow-x-auto pb-4 rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="min-w-fit p-3">
+        <div className="min-w-fit sm:min-w-full p-2 sm:p-3">
           {/* 헤더 */}
           <div className="flex border-b border-slate-200 pb-2">
-            <div className="w-16 sm:w-20 shrink-0 text-center text-xs font-semibold text-slate-400 py-1">
+            <div className="w-14 sm:w-20 shrink-0 text-center text-xs font-semibold text-slate-400 py-1">
               시간
             </div>
             {dates.map((dayOrDate) => (
-              <div key={dayOrDate} className="flex-1 min-w-[76px] sm:min-w-[96px] text-center px-1">
-                <div className="font-extrabold text-xs sm:text-sm text-slate-800">
+              <div key={dayOrDate} className="flex-1 min-w-[50px] sm:min-w-[96px] text-center px-0.5 sm:px-1">
+                <div className="font-extrabold text-[11px] sm:text-sm text-slate-800">
                   {formatDayOrDateKorean(dayOrDate)}
                 </div>
               </div>
@@ -141,14 +145,14 @@ export default function ScheduleHeatmap({
                   key={time}
                   className="relative flex items-stretch h-10"
                 >
-                  {/* 시간 라벨: 줄이 글자를 가리지 않도록 시간 축 영역 분리 & bg-white 적용 */}
-                  <div className="w-16 sm:w-20 shrink-0 relative select-none pointer-events-none">
-                    <span className="absolute -top-2.5 right-2 sm:right-3 text-[11px] sm:text-xs font-medium text-slate-500 whitespace-nowrap bg-white px-1 z-10">
+                  {/* 시간 라벨 */}
+                  <div className="w-14 sm:w-20 shrink-0 relative select-none pointer-events-none">
+                    <span className="absolute -top-2.5 right-1.5 sm:right-3 text-[10px] sm:text-xs font-medium text-slate-500 whitespace-nowrap bg-white px-0.5 sm:px-1 z-10">
                       {formatTimeKorean(time)}
                     </span>
                   </div>
 
-                  {/* 날짜별 셀: 상단 경계선(border-t)이 시간의 눈금선이 되며 30분 블록을 빈틈없이 채움 */}
+                  {/* 날짜별 셀 */}
                   {dates.map((date) => {
                     const slotKey = `${date}T${time}`;
                     const isBlocked = isMentorBlockedSlot(date, time);
@@ -162,20 +166,18 @@ export default function ScheduleHeatmap({
                         onClick={() => setActiveSlot(slotKey)}
                         onMouseEnter={() => setActiveSlot(slotKey)}
                         className={cn(
-                          "flex-1 min-w-[76px] sm:min-w-[96px] h-full border-r border-slate-200/80 last:border-r-0 border-t flex items-center justify-center select-none text-[11px] transition-colors duration-100",
+                          "flex-1 min-w-[50px] sm:min-w-[96px] h-full border-r border-slate-200/80 last:border-r-0 border-t flex items-center justify-center select-none text-[11px] transition-colors duration-100",
                           isHour ? "border-t-slate-300" : "border-t-slate-200/60",
                           isBlocked
-                            ? "bg-slate-100/90 text-slate-400 cursor-not-allowed font-semibold text-[10px]"
+                            ? "bg-slate-100/90 text-slate-400 cursor-not-allowed font-semibold text-[9px] sm:text-[10px] text-center leading-tight"
                             : cn("cursor-pointer", getCellColor(count)),
                           isActive && "ring-2 ring-indigo-500 ring-inset z-10 font-bold",
                           isConfirmed && "bg-amber-500 text-white font-extrabold"
                         )}
                         title={isBlocked ? "멘토 불가능 시간 (월·화·수·목은 18시 이후 가능)" : undefined}
                       >
-                        {isBlocked ? (
-                          "멘토 불가"
-                        ) : isConfirmed ? (
-                          <span className="flex items-center gap-0.5 text-[10px]">
+                        {isBlocked ? null : isConfirmed ? (
+                          <span className="flex items-center gap-0.5 text-[9px] sm:text-[10px]">
                             <CheckCircle className="w-3 h-3" /> 확정
                           </span>
                         ) : count > 0 ? (
@@ -193,15 +195,15 @@ export default function ScheduleHeatmap({
             {/* 마지막 블록 바닥 모서리에 종료 시각 라벨 및 마감선 표시 */}
             {finalEndTimeStr && (
               <div className="relative flex items-start h-4">
-                <div className="w-16 sm:w-20 shrink-0 relative select-none pointer-events-none">
-                  <span className="absolute -top-2.5 right-2 sm:right-3 text-[11px] sm:text-xs font-medium text-slate-400 whitespace-nowrap bg-white px-1 z-10">
+                <div className="w-14 sm:w-20 shrink-0 relative select-none pointer-events-none">
+                  <span className="absolute -top-2.5 right-1.5 sm:right-3 text-[10px] sm:text-xs font-medium text-slate-400 whitespace-nowrap bg-white px-0.5 sm:px-1 z-10">
                     {formatTimeKorean(finalEndTimeStr)}
                   </span>
                 </div>
                 {dates.map((date) => (
                   <div
                     key={date}
-                    className="flex-1 min-w-[76px] sm:min-w-[96px] border-t border-slate-300 border-r border-slate-200/80 last:border-r-0"
+                    className="flex-1 min-w-[50px] sm:min-w-[96px] border-t border-slate-300 border-r border-slate-200/80 last:border-r-0"
                   />
                 ))}
               </div>

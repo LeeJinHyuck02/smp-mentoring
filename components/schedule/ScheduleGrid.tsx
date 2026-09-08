@@ -12,6 +12,7 @@ interface ScheduleGridProps {
   selectedSlots: string[]; // ["2026-09-15T09:00", ...]
   onChange: (slots: string[]) => void;
   isReadOnly?: boolean;
+  headerAction?: React.ReactNode;
 }
 
 export default function ScheduleGrid({
@@ -22,6 +23,7 @@ export default function ScheduleGrid({
   selectedSlots,
   onChange,
   isReadOnly = false,
+  headerAction,
 }: ScheduleGridProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragMode, setDragMode] = useState<"select" | "deselect">("select");
@@ -182,7 +184,7 @@ export default function ScheduleGrid({
         <div className="flex items-center gap-1.5 font-medium">
           <Clock className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
           <span>
-            멘토 가능: <strong>월~목 18시 이후</strong> · <strong>금~일 13시 이후</strong>
+            <strong>월~목 18시 이후</strong> · <strong>금 13시 이후</strong>
           </span>
         </div>
         <div className="flex items-center gap-2 text-[11px] text-slate-500">
@@ -194,27 +196,28 @@ export default function ScheduleGrid({
             <span className="w-2.5 h-2.5 rounded bg-emerald-500 inline-block" />
             내 선택
           </span>
+          {headerAction && <div className="ml-1 shrink-0">{headerAction}</div>}
         </div>
       </div>
 
-      {/* 반응형 가로 스크롤 컨테이너 */}
+      {/* 반응형 가로 스크롤 컨테이너 (모바일 5일 기준 가로 스크롤 없이 쏙 들어감) */}
       <div className="overflow-x-auto pb-4 rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="min-w-fit p-3">
+        <div className="min-w-fit sm:min-w-full p-2 sm:p-3">
           {/* 테이블 헤더: 요일 */}
           <div className="flex border-b border-slate-200 pb-2">
-            <div className="w-16 sm:w-20 shrink-0 text-center text-xs font-semibold text-slate-400 py-1">
+            <div className="w-14 sm:w-20 shrink-0 text-center text-xs font-semibold text-slate-400 py-1">
               시간
             </div>
             {dates.map((dayOrDate) => (
-              <div key={dayOrDate} className="flex-1 min-w-[76px] sm:min-w-[96px] text-center px-1">
-                <div className="font-extrabold text-xs sm:text-sm text-slate-800">
+              <div key={dayOrDate} className="flex-1 min-w-[50px] sm:min-w-[96px] text-center px-0.5 sm:px-1">
+                <div className="font-extrabold text-[11px] sm:text-sm text-slate-800">
                   {formatDayOrDateKorean(dayOrDate)}
                 </div>
                 {!isReadOnly && (
                   <button
                     type="button"
                     onClick={() => toggleFullDay(dayOrDate)}
-                    className="mt-1 text-[11px] text-indigo-600 hover:text-indigo-800 hover:underline font-medium block mx-auto active:scale-95"
+                    className="mt-1 text-[10px] sm:text-[11px] text-indigo-600 hover:text-indigo-800 hover:underline font-medium block mx-auto active:scale-95"
                   >
                     하루 전체
                   </button>
@@ -223,9 +226,9 @@ export default function ScheduleGrid({
             ))}
           </div>
 
-          {/* 시간표 매트릭스 그리드: 시간 라벨이 30분 블록의 상단 모서리(선)에 위치 */}
+          {/* 시간표 매트릭스 그리드: 모바일 드래그 시 세로 스크롤 튐 방지 (touch-none) */}
           <div
-            className="pt-3.5 pb-2 text-xs"
+            className="pt-3.5 pb-2 text-xs touch-none"
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
@@ -236,14 +239,14 @@ export default function ScheduleGrid({
                   key={time}
                   className="relative flex items-stretch h-10"
                 >
-                  {/* 시간 라벨: 줄이 글자를 가리지 않도록 시간 축 영역 분리 & bg-white 적용 */}
-                  <div className="w-16 sm:w-20 shrink-0 relative select-none pointer-events-none">
-                    <span className="absolute -top-2.5 right-2 sm:right-3 text-[11px] sm:text-xs font-medium text-slate-500 whitespace-nowrap bg-white px-1 z-10">
+                  {/* 시간 라벨 */}
+                  <div className="w-14 sm:w-20 shrink-0 relative select-none pointer-events-none">
+                    <span className="absolute -top-2.5 right-1.5 sm:right-3 text-[10px] sm:text-xs font-medium text-slate-500 whitespace-nowrap bg-white px-0.5 sm:px-1 z-10">
                       {formatTimeKorean(time)}
                     </span>
                   </div>
 
-                  {/* 날짜별 셀: 상단 경계선(border-t)이 시간의 눈금선이 되며 30분 블록을 빈틈없이 채움 */}
+                  {/* 날짜별 셀 */}
                   {dates.map((date) => {
                     const slotKey = `${date}T${time}`;
                     const isSelected = selectedSet.has(slotKey);
@@ -257,10 +260,10 @@ export default function ScheduleGrid({
                         onMouseEnter={() => handleMouseEnter(slotKey)}
                         onTouchStart={(e) => handleTouchStart(e, slotKey)}
                         className={cn(
-                          "flex-1 min-w-[76px] sm:min-w-[96px] h-full border-r border-slate-200/80 last:border-r-0 border-t flex items-center justify-center select-none transition-colors duration-75 touch-manipulation",
+                          "flex-1 min-w-[50px] sm:min-w-[96px] h-full border-r border-slate-200/80 last:border-r-0 border-t flex items-center justify-center select-none transition-colors duration-75 touch-manipulation",
                           isHour ? "border-t-slate-300" : "border-t-slate-200/60",
                           isBlocked
-                            ? "bg-slate-100/90 text-slate-400 cursor-not-allowed text-[10px] font-semibold"
+                            ? "bg-slate-100/90 text-slate-400 cursor-not-allowed text-[9px] sm:text-[10px] font-semibold"
                             : isSelected
                             ? "bg-emerald-500 text-white font-bold cursor-pointer"
                             : "bg-white hover:bg-emerald-50/70 text-slate-400 cursor-pointer",
@@ -268,9 +271,7 @@ export default function ScheduleGrid({
                         )}
                         title={isBlocked ? "멘토 불가 (월~목 18시 이후 가능)" : undefined}
                       >
-                        {isBlocked ? (
-                          <span className="pointer-events-none">멘토 불가</span>
-                        ) : isSelected ? (
+                        {isBlocked ? null : isSelected ? (
                           <Check className="w-3.5 h-3.5 stroke-[3] pointer-events-none" />
                         ) : null}
                       </div>
@@ -283,15 +284,15 @@ export default function ScheduleGrid({
             {/* 마지막 블록 바닥 모서리에 종료 시각 라벨 및 마감선 표시 */}
             {finalEndTimeStr && (
               <div className="relative flex items-start h-4">
-                <div className="w-16 sm:w-20 shrink-0 relative select-none pointer-events-none">
-                  <span className="absolute -top-2.5 right-2 sm:right-3 text-[11px] sm:text-xs font-medium text-slate-400 whitespace-nowrap bg-white px-1 z-10">
+                <div className="w-14 sm:w-20 shrink-0 relative select-none pointer-events-none">
+                  <span className="absolute -top-2.5 right-1.5 sm:right-3 text-[10px] sm:text-xs font-medium text-slate-400 whitespace-nowrap bg-white px-0.5 sm:px-1 z-10">
                     {formatTimeKorean(finalEndTimeStr)}
                   </span>
                 </div>
                 {dates.map((date) => (
                   <div
                     key={date}
-                    className="flex-1 min-w-[76px] sm:min-w-[96px] border-t border-slate-300 border-r border-slate-200/80 last:border-r-0"
+                    className="flex-1 min-w-[50px] sm:min-w-[96px] border-t border-slate-300 border-r border-slate-200/80 last:border-r-0"
                   />
                 ))}
               </div>
