@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { formatTimeKorean, formatDayOrDateKorean, generateTimeSlots, isMentorBlockedSlot, cn } from "@/lib/utils";
-import { Check, Sparkles, RotateCcw, Clock, Ban } from "lucide-react";
+import { Check, Sparkles, RotateCcw, Clock } from "lucide-react";
 
 interface ScheduleGridProps {
   dates: string[]; // e.g. ["2026-09-15", "2026-09-16", ...]

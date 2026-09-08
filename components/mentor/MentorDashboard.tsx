@@ -15,9 +15,7 @@ import {
   Plus,
   Share2,
   ExternalLink,
-  Users,
   CheckCircle2,
-  Sparkles,
   RefreshCw,
   MessageSquare,
   X,
@@ -30,7 +28,7 @@ interface MentorDashboardProps {
   onLogout?: () => void;
 }
 
-export default function MentorDashboard({ onLogout }: MentorDashboardProps) {
+export default function MentorDashboard({ onLogout }: MentorDashboardProps = {}) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [sections, setSections] = useState<Record<string, Section[]>>({});
   const [polls, setPolls] = useState<Record<string, SchedulePoll[]>>({});

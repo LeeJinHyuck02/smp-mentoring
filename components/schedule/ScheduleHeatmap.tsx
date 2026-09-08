@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { formatTimeKorean, formatDayOrDateKorean, generateTimeSlots, isMentorBlockedSlot, cn } from "@/lib/utils";
 import { ScheduleSubmission } from "@/types/database";
-import { Users, Trophy, CheckCircle, Info, Sparkles } from "lucide-react";
+import { Trophy, CheckCircle, Info, Sparkles } from "lucide-react";
 
 interface ScheduleHeatmapProps {
   dates: string[];
