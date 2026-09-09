@@ -112,7 +112,10 @@ export default function ScheduleGrid({
     lastTouchTime.current = Date.now();
 
     const [day, time] = slotKey.split("T");
-    if (isMentorBlockedSlot(day, time)) return;
+    if (isMentorBlockedSlot(day, time)) {
+      setIsDragging(false);
+      return;
+    }
 
     const isCurrentlySelected = selectedSlotsRef.current.includes(slotKey);
     const mode = isCurrentlySelected ? "deselect" : "select";
@@ -204,7 +207,7 @@ export default function ScheduleGrid({
       <div className="overflow-x-auto pb-4 rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="min-w-fit sm:min-w-full p-2 sm:p-3">
           {/* 테이블 헤더: 요일 */}
-          <div className="flex border-b border-slate-200 pb-2">
+          <div className="flex border-b border-slate-200 pb-2 touch-pan-y">
             <div className="w-14 sm:w-20 shrink-0 text-center text-xs font-semibold text-slate-400 py-1">
               시간
             </div>
@@ -226,9 +229,9 @@ export default function ScheduleGrid({
             ))}
           </div>
 
-          {/* 시간표 매트릭스 그리드: 모바일 드래그 시 세로 스크롤 튐 방지 (touch-none) */}
+          {/* 시간표 매트릭스 그리드: 전체 컨테이너는 touch-pan-y로 상하 스크롤을 허용하고, 선택 가능 셀에만 touch-none을 적용 */}
           <div
-            className="pt-3.5 pb-2 text-xs touch-none"
+            className="pt-3.5 pb-2 text-xs touch-pan-y"
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
@@ -240,7 +243,7 @@ export default function ScheduleGrid({
                   className="relative flex items-stretch h-10"
                 >
                   {/* 시간 라벨 */}
-                  <div className="w-14 sm:w-20 shrink-0 relative select-none pointer-events-none">
+                  <div className="w-14 sm:w-20 shrink-0 relative select-none pointer-events-none touch-pan-y">
                     <span className="absolute -top-2.5 right-1.5 sm:right-3 text-[10px] sm:text-xs font-medium text-slate-500 whitespace-nowrap bg-white px-0.5 sm:px-1 z-10">
                       {formatTimeKorean(time)}
                     </span>
@@ -260,8 +263,9 @@ export default function ScheduleGrid({
                         onMouseEnter={() => handleMouseEnter(slotKey)}
                         onTouchStart={(e) => handleTouchStart(e, slotKey)}
                         className={cn(
-                          "flex-1 min-w-[50px] sm:min-w-[96px] h-full border-r border-slate-200/80 last:border-r-0 border-t flex items-center justify-center select-none transition-colors duration-75 touch-manipulation",
+                          "flex-1 min-w-[50px] sm:min-w-[96px] h-full border-r border-slate-200/80 last:border-r-0 border-t flex items-center justify-center select-none transition-colors duration-75",
                           isHour ? "border-t-slate-300" : "border-t-slate-200/60",
+                          isBlocked || isReadOnly ? "touch-pan-y" : "touch-none",
                           isBlocked
                             ? "bg-slate-100/90 text-slate-400 cursor-not-allowed text-[9px] sm:text-[10px] font-semibold"
                             : isSelected
@@ -283,8 +287,8 @@ export default function ScheduleGrid({
 
             {/* 마지막 블록 바닥 모서리에 종료 시각 라벨 및 마감선 표시 */}
             {finalEndTimeStr && (
-              <div className="relative flex items-start h-4">
-                <div className="w-14 sm:w-20 shrink-0 relative select-none pointer-events-none">
+              <div className="relative flex items-start h-4 touch-pan-y">
+                <div className="w-14 sm:w-20 shrink-0 relative select-none pointer-events-none touch-pan-y">
                   <span className="absolute -top-2.5 right-1.5 sm:right-3 text-[10px] sm:text-xs font-medium text-slate-400 whitespace-nowrap bg-white px-0.5 sm:px-1 z-10">
                     {formatTimeKorean(finalEndTimeStr)}
                   </span>
