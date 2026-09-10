@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import MentorDashboard from "@/components/mentor/MentorDashboard";
 import { Lock, Eye, EyeOff, ShieldCheck, ArrowRight, AlertCircle } from "lucide-react";
 import { verifyMentorPassword } from "@/app/mentor/actions";
+import ThemeToggle from "@/components/theme/ThemeToggle";
 
 export default function MentorPasswordGate() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -77,7 +78,10 @@ export default function MentorPasswordGate() {
 
   // 비밀번호 입력 화면
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-4 sm:p-6 text-slate-100">
+    <main className="relative min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-4 sm:p-6 text-slate-100">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-md rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 p-6 sm:p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         {/* 상단 락 아이콘 및 헤더 */}
         <div className="text-center mb-6">

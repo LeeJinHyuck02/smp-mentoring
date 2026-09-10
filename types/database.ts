@@ -72,3 +72,45 @@ export interface Answer {
   created_at: string;
 }
 
+export type SurveyQuestionType = 'single_choice' | 'multiple_choice' | 'text' | 'rating';
+
+export interface Survey {
+  id: string;
+  section_id: string;
+  title: string;
+  description?: string;
+  is_closed: boolean;
+  is_anonymous: boolean;
+  created_at: string;
+}
+
+export interface SurveyQuestion {
+  id: string;
+  survey_id: string;
+  question_text: string;
+  question_type: SurveyQuestionType;
+  options: string[]; // ["옵션1", "옵션2", ...]
+  is_required: boolean;
+  order_index: number;
+  created_at: string;
+}
+
+export interface SurveyResponse {
+  id: string;
+  survey_id: string;
+  respondent_name: string;
+  guest_token?: string;
+  created_at: string;
+}
+
+export interface SurveyAnswer {
+  id: string;
+  response_id: string;
+  question_id: string;
+  selected_options: string[];
+  text_answer?: string;
+  rating_value?: number;
+  created_at: string;
+}
+
+

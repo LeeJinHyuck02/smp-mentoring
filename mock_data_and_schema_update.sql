@@ -46,7 +46,7 @@ insert into public.mentor_profiles (id, email, full_name)
 values (
   '00000000-0000-0000-0000-000000000001',
   'mentor@smp.local',
-  'SMP 전담 멘토'
+  '이진혁'
 )
 on conflict (id) do update set
   full_name = excluded.full_name;

@@ -119,32 +119,32 @@ export default function DeleteSubmissionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+      <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400">
               <Trash2 className="w-4 h-4" />
             </span>
-            <h3 className="text-base font-bold text-slate-900">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
               투표 내역 삭제
             </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <p className="text-xs text-slate-500 leading-relaxed">
+        <form onSubmit={handleSubmit} autoComplete="off" className="mt-4 space-y-4">
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
             시간표 제출 시 입력하셨던 <strong>이름</strong>과 <strong>4자리 비밀번호</strong>를 입력하시면 제출된 내역을 삭제할 수 있습니다.
           </p>
 
           {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-rose-50 p-3 text-xs text-rose-700 border border-rose-100 animate-in shake duration-200">
+            <div className="flex items-center gap-2 rounded-xl bg-rose-50 dark:bg-rose-950/30 p-3 text-xs text-rose-700 dark:text-rose-400 border border-rose-100 dark:border-rose-900/40 animate-in shake duration-200">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
               <span>{error}</span>
             </div>
@@ -152,22 +152,23 @@ export default function DeleteSubmissionModal({
 
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
                 <User className="w-3.5 h-3.5 text-slate-400" />
                 작성자 이름 / 닉네임
               </label>
               <input
                 type="text"
                 required
+                autoComplete="off"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="예: 홍길동"
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs sm:text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none transition"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none transition"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
                 <Lock className="w-3.5 h-3.5 text-slate-400" />
                 4자리 비밀번호 (PIN)
               </label>
@@ -177,10 +178,13 @@ export default function DeleteSubmissionModal({
                 inputMode="numeric"
                 pattern="[0-9]*"
                 maxLength={4}
+                autoComplete="new-password"
+                data-1p-ignore="true"
+                data-lpignore="true"
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ""))}
                 placeholder="••••"
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-mono tracking-widest focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none transition"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-center text-sm font-mono tracking-widest text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none transition"
               />
             </div>
           </div>
@@ -189,7 +193,7 @@ export default function DeleteSubmissionModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition active:scale-95"
+              className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition active:scale-95"
             >
               취소
             </button>

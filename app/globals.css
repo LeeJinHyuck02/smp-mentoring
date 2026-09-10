@@ -5,6 +5,13 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
+  color-scheme: light;
+}
+
+.dark {
+  --background: #020617;
+  --foreground: #f8fafc;
+  color-scheme: dark;
 }
 
 body {
@@ -12,11 +19,41 @@ body {
   background: var(--background);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* 모바일 터치 드래그 시 텍스트 선택 방지 */
 .no-select {
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* 브라우저(Chrome, Edge, Safari) 비밀번호 및 자동완성 파란색(#e8f0fe) 배경 강제 오버라이드 (Light & Dark) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: #0f172a !important;
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  transition: background-color 5000000s ease-in-out 0s;
+  caret-color: #0f172a !important;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover, 
+.dark input:-webkit-autofill:focus, 
+.dark input:-webkit-autofill:active {
+  -webkit-text-fill-color: #f8fafc !important;
+  -webkit-box-shadow: 0 0 0px 1000px #1e293b inset !important;
+  box-shadow: 0 0 0px 1000px #1e293b inset !important;
+  transition: background-color 5000000s ease-in-out 0s;
+  caret-color: #f8fafc !important;
+}
+
+/* Edge 브라우저 기본 비밀번호 보기 아이콘 제거 */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
 }
 

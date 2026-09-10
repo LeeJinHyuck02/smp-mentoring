@@ -183,16 +183,16 @@ export default function ScheduleGrid({
   return (
     <div className="w-full select-none" ref={gridRef}>
       {/* 멘토 일정 안내 & 범례 */}
-      <div className="mb-3 rounded-xl bg-slate-100/90 border border-slate-200 px-3.5 py-2.5 text-xs text-slate-600 flex items-center justify-between gap-2 flex-wrap">
+      <div className="mb-3 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-xs text-slate-600 dark:text-slate-300 flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-1.5 font-medium">
-          <Clock className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+          <Clock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
           <span>
             <strong>월~목 18시 이후</strong> · <strong>금 13시 이후</strong>
           </span>
         </div>
-        <div className="flex items-center gap-2 text-[11px] text-slate-500">
+        <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
           <span className="inline-flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded bg-slate-200 border border-slate-300 inline-block" />
+            <span className="w-2.5 h-2.5 rounded bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 inline-block" />
             멘토 불가
           </span>
           <span className="inline-flex items-center gap-1">
@@ -204,23 +204,23 @@ export default function ScheduleGrid({
       </div>
 
       {/* 반응형 가로 스크롤 컨테이너 (모바일 5일 기준 가로 스크롤 없이 쏙 들어감) */}
-      <div className="overflow-x-auto pb-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-x-auto pb-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <div className="min-w-fit sm:min-w-full p-2 sm:p-3">
           {/* 테이블 헤더: 요일 */}
-          <div className="flex border-b border-slate-200 pb-2 touch-pan-y">
-            <div className="w-14 sm:w-20 shrink-0 text-center text-xs font-semibold text-slate-400 py-1">
+          <div className="flex border-b border-slate-200 dark:border-slate-800 pb-2 touch-pan-y">
+            <div className="w-14 sm:w-20 shrink-0 text-center text-xs font-semibold text-slate-400 dark:text-slate-500 py-1">
               시간
             </div>
             {dates.map((dayOrDate) => (
               <div key={dayOrDate} className="flex-1 min-w-[50px] sm:min-w-[96px] text-center px-0.5 sm:px-1">
-                <div className="font-extrabold text-[11px] sm:text-sm text-slate-800">
+                <div className="font-extrabold text-[11px] sm:text-sm text-slate-800 dark:text-slate-100">
                   {formatDayOrDateKorean(dayOrDate)}
                 </div>
                 {!isReadOnly && (
                   <button
                     type="button"
                     onClick={() => toggleFullDay(dayOrDate)}
-                    className="mt-1 text-[10px] sm:text-[11px] text-indigo-600 hover:text-indigo-800 hover:underline font-medium block mx-auto active:scale-95"
+                    className="mt-1 text-[10px] sm:text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline font-medium block mx-auto active:scale-95"
                   >
                     하루 전체
                   </button>
@@ -244,7 +244,7 @@ export default function ScheduleGrid({
                 >
                   {/* 시간 라벨 */}
                   <div className="w-14 sm:w-20 shrink-0 relative select-none pointer-events-none touch-pan-y">
-                    <span className="absolute -top-2.5 right-1.5 sm:right-3 text-[10px] sm:text-xs font-medium text-slate-500 whitespace-nowrap bg-white px-0.5 sm:px-1 z-10">
+                    <span className="absolute -top-2.5 right-1.5 sm:right-3 text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap bg-white dark:bg-slate-900 px-0.5 sm:px-1 z-10">
                       {formatTimeKorean(time)}
                     </span>
                   </div>
@@ -263,14 +263,14 @@ export default function ScheduleGrid({
                         onMouseEnter={() => handleMouseEnter(slotKey)}
                         onTouchStart={(e) => handleTouchStart(e, slotKey)}
                         className={cn(
-                          "flex-1 min-w-[50px] sm:min-w-[96px] h-full border-r border-slate-200/80 last:border-r-0 border-t flex items-center justify-center select-none transition-colors duration-75",
-                          isHour ? "border-t-slate-300" : "border-t-slate-200/60",
+                          "flex-1 min-w-[50px] sm:min-w-[96px] h-full border-r border-slate-200/80 dark:border-slate-800 last:border-r-0 border-t flex items-center justify-center select-none transition-colors duration-75",
+                          isHour ? "border-t-slate-300 dark:border-t-slate-700" : "border-t-slate-200/60 dark:border-t-slate-800/60",
                           isBlocked || isReadOnly ? "touch-pan-y" : "touch-none",
                           isBlocked
-                            ? "bg-slate-100/90 text-slate-400 cursor-not-allowed text-[9px] sm:text-[10px] font-semibold"
+                            ? "bg-slate-100/90 dark:bg-slate-800/70 text-slate-400 dark:text-slate-500 cursor-not-allowed text-[9px] sm:text-[10px] font-semibold"
                             : isSelected
                             ? "bg-emerald-500 text-white font-bold cursor-pointer"
-                            : "bg-white hover:bg-emerald-50/70 text-slate-400 cursor-pointer",
+                            : "bg-white dark:bg-slate-900 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/30 text-slate-400 dark:text-slate-500 cursor-pointer",
                           isReadOnly && !isBlocked && "cursor-default hover:bg-transparent"
                         )}
                         title={isBlocked ? "멘토 불가 (월~목 18시 이후 가능)" : undefined}
@@ -289,14 +289,14 @@ export default function ScheduleGrid({
             {finalEndTimeStr && (
               <div className="relative flex items-start h-4 touch-pan-y">
                 <div className="w-14 sm:w-20 shrink-0 relative select-none pointer-events-none touch-pan-y">
-                  <span className="absolute -top-2.5 right-1.5 sm:right-3 text-[10px] sm:text-xs font-medium text-slate-400 whitespace-nowrap bg-white px-0.5 sm:px-1 z-10">
+                  <span className="absolute -top-2.5 right-1.5 sm:right-3 text-[10px] sm:text-xs font-medium text-slate-400 dark:text-slate-500 whitespace-nowrap bg-white dark:bg-slate-900 px-0.5 sm:px-1 z-10">
                     {formatTimeKorean(finalEndTimeStr)}
                   </span>
                 </div>
                 {dates.map((date) => (
                   <div
                     key={date}
-                    className="flex-1 min-w-[50px] sm:min-w-[96px] border-t border-slate-300 border-r border-slate-200/80 last:border-r-0"
+                    className="flex-1 min-w-[50px] sm:min-w-[96px] border-t border-slate-300 dark:border-t-slate-700 border-r border-slate-200/80 dark:border-r-slate-800 last:border-r-0"
                   />
                 ))}
               </div>
@@ -307,10 +307,10 @@ export default function ScheduleGrid({
 
       {/* 선택된 총 시간 요약 */}
       {!isReadOnly && (
-        <div className="mt-3 flex items-center justify-between text-xs sm:text-sm text-slate-600 font-medium px-1">
+        <div className="mt-3 flex items-center justify-between text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium px-1">
           <span>
             선택된 시간:{" "}
-            <strong className="text-emerald-600 text-base">
+            <strong className="text-emerald-600 dark:text-emerald-400 text-base">
               {selectedSlots.length}개
             </strong>{" "}
             ({((selectedSlots.length * slotDuration) / 60).toFixed(1)}시간)

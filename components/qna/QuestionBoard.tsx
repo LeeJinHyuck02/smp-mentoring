@@ -29,12 +29,51 @@ import { cn } from "@/lib/utils";
 interface QuestionBoardProps {
   sectionId: string;
   isMentor?: boolean;
+  mentorName?: string;
 }
 
-export default function QuestionBoard({ sectionId, isMentor = false }: QuestionBoardProps) {
+export default function QuestionBoard({
+  sectionId,
+  isMentor = false,
+  mentorName: initialMentorName,
+}: QuestionBoardProps) {
+  const [mentorName, setMentorName] = useState<string>(initialMentorName || "");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answersMap, setAnswersMap] = useState<Record<string, Answer[]>>({});
   const [isLoading, setIsLoading] = useState(true);
+
+  // 서버에 저장되어 있는 멘토 이름(mentor_profiles) 동적 조회
+  useEffect(() => {
+    async function fetchMentorName() {
+      if (initialMentorName) {
+        setMentorName(initialMentorName);
+        return;
+      }
+      try {
+        const { data } = await supabase
+          .from("sections")
+          .select("courses(mentor_profiles(full_name))")
+          .eq("id", sectionId)
+          .single();
+        const fetchedName = (data as any)?.courses?.mentor_profiles?.full_name;
+        if (fetchedName) {
+          setMentorName(fetchedName);
+        } else {
+          const { data: mData } = await supabase
+            .from("mentor_profiles")
+            .select("full_name")
+            .limit(1)
+            .single();
+          if (mData?.full_name) {
+            setMentorName(mData.full_name);
+          }
+        }
+      } catch (err) {
+        console.error("멘토 이름 조회 실패:", err);
+      }
+    }
+    fetchMentorName();
+  }, [sectionId, initialMentorName]);
 
   // 모달 및 잠금 해제 상태
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -270,9 +309,10 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
 
     setSubmittingReplyId(questionId);
     try {
+      const mentorAuthorName = mentorName || "이진혁";
       const { error: ansError } = await supabase.from("answers").insert({
         question_id: questionId,
-        author_name: "SMP 전담 멘토",
+        author_name: mentorAuthorName,
         is_mentor: true,
         content: text,
       });
@@ -503,14 +543,14 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
       <div className="mb-4 flex items-center justify-between gap-2 pb-1">
         {/* 좌측: 토글 탭 (멘티 모드일 때 전체/내가 쓴 질문 토글, 멘토 모드일 때 전체 질문 수) */}
         {!isMentor ? (
-          <div className="flex rounded-2xl bg-slate-100 p-1 w-fit">
+          <div className="flex rounded-2xl bg-slate-100 dark:bg-slate-800 p-1 w-fit">
             <button
               type="button"
               onClick={() => setFilterTab("all")}
               className={`rounded-xl px-3 sm:px-3.5 py-1.5 text-xs font-bold transition whitespace-nowrap ${
                 filterTab === "all"
-                  ? "bg-white text-indigo-700 shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
             >
               전체({visibleQuestions.length})
@@ -520,8 +560,8 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
               onClick={() => setFilterTab("mine")}
               className={`rounded-xl px-3 sm:px-3.5 py-1.5 text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
                 filterTab === "mine"
-                  ? "bg-white text-indigo-700 shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
             >
               <span>내가 쓴 질문</span>
@@ -533,8 +573,8 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
             </button>
           </div>
         ) : (
-          <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-            <span className="inline-flex items-center rounded-xl bg-indigo-50 px-3 py-1.5 text-indigo-700 border border-indigo-100 font-semibold whitespace-nowrap">
+          <div className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <span className="inline-flex items-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1.5 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/50 font-semibold whitespace-nowrap">
               전체 {questions.length}개
             </span>
           </div>
@@ -554,8 +594,8 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
       {/* 질문 목록 */}
       {displayedQuestions.length === 0 && !isLoading ? (
         filterTab === "mine" ? (
-          <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-white p-10 text-center my-6">
-            <Search className="mx-auto h-10 w-10 text-slate-300 mb-2" />
+          <div className="rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-10 text-center my-6">
+            <Search className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-600 mb-2" />
             <button
               type="button"
               onClick={() => {
@@ -571,12 +611,12 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
             </button>
           </div>
         ) : (
-          <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-white p-12 text-center my-6">
-            <MessageSquare className="mx-auto h-12 w-12 text-slate-300 mb-3" />
-            <h3 className="text-base font-bold text-slate-800">
+          <div className="rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center my-6">
+            <MessageSquare className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600 mb-3" />
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">
               아직 등록된 질문이 없습니다.
             </h3>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               강의 내용, 과제, 시험 관련 질문을 자유롭게 남겨보세요!
             </p>
             <button
@@ -623,25 +663,25 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
             return (
               <div
                 key={q.id}
-                className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm transition hover:border-slate-300"
+                className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-sm transition hover:border-slate-300 dark:hover:border-slate-700"
               >
                 {/* 상단 메타 바 */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-100 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-100 dark:border-slate-800 text-xs">
                   <div className="flex items-center gap-2">
                     {/* 답변 상태 뱃지 */}
                     {isResolved ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-extrabold text-emerald-700 border border-emerald-200">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 text-[11px] font-extrabold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                         <CheckCircle2 className="w-3 h-3" /> 멘토 답변 완료
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-extrabold text-amber-700 border border-amber-200">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/60 px-2.5 py-0.5 text-[11px] font-extrabold text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                         <Clock className="w-3 h-3" /> 답변 대기
                       </span>
                     )}
 
                     {/* 비밀글 태그 */}
                     {q.is_secret && (
-                      <span className="inline-flex items-center gap-0.5 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                      <span className="inline-flex items-center gap-0.5 rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                         <Lock className="w-3 h-3" /> 비밀글
                       </span>
                     )}
@@ -650,8 +690,8 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                     {!isMentor && isMine && (
                       <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold ${
                         isUnlocked
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          : "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                          ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                          : "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
                       }`}>
                         {isUnlocked ? "🔓 내 글 (열람 중)" : "📌 내가 쓴 글"}
                       </span>
@@ -659,13 +699,13 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                   </div>
 
                   <div className="flex items-center gap-2.5 text-[11px]">
-                    <span className="text-slate-400">
-                      작성자: <strong className="text-slate-700">{displayAuthor}</strong>
+                    <span className="text-slate-400 dark:text-slate-500">
+                      작성자: <strong className="text-slate-700 dark:text-slate-200">{displayAuthor}</strong>
                     </span>
                     <button
                       type="button"
                       onClick={() => handleDeleteQuestion(q)}
-                      className="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition active:scale-95"
+                      className="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition active:scale-95"
                       title={isMentor ? "질문 삭제 (멘토 권한)" : "질문 삭제 (본인 확인 후 삭제)"}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -675,7 +715,7 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                 </div>
 
                 {/* 질문 제목 */}
-                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 mt-3 mb-2 flex items-center gap-1.5">
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-3 mb-2 flex items-center gap-1.5">
                   {q.is_secret && <Lock className="w-4 h-4 text-slate-400 shrink-0" />}
                   <span>{q.title}</span>
                 </h3>
@@ -685,7 +725,7 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                   <div>
                     <p
                       className={cn(
-                        "text-xs sm:text-sm text-slate-700 whitespace-pre-wrap break-words leading-relaxed",
+                        "text-xs sm:text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap break-words leading-relaxed",
                         isLongContent && !isExpanded && "line-clamp-3"
                       )}
                     >
@@ -697,7 +737,7 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                       <button
                         type="button"
                         onClick={() => toggleExpand(q.id)}
-                        className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition py-0.5 select-none"
+                        className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition py-0.5 select-none"
                       >
                         <span>{isExpanded ? "접기" : "더보기"}</span>
                         {isExpanded ? (
@@ -717,7 +757,7 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                             href={url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="block h-24 w-24 sm:h-28 sm:w-28 rounded-xl overflow-hidden border border-slate-200 hover:opacity-90 transition shadow-2xs"
+                            className="block h-24 w-24 sm:h-28 sm:w-28 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 hover:opacity-90 transition shadow-2xs"
                           >
                             <img src={url} alt="첨부 이미지" className="h-full w-full object-cover" />
                           </a>
@@ -727,9 +767,9 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                   </div>
                 ) : (
                   /* 비밀글 잠금 상태 안내 */
-                  <div className="my-2 rounded-xl bg-slate-50 p-4 text-center border border-slate-200/80">
+                  <div className="my-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-4 text-center border border-slate-200/80 dark:border-slate-700">
                     <Lock className="mx-auto h-6 w-6 text-slate-400 mb-1" />
-                    <p className="text-xs font-semibold text-slate-600">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
                       🔒 작성자와 멘토만 볼 수 있는 비밀글입니다.
                     </p>
                     <button
@@ -758,7 +798,7 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                     : answers.slice(0, maxCollapsed);
 
                   return (
-                    <div className="mt-4 pt-4 border-t border-slate-100 space-y-2.5">
+                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
                       {visibleAnswers.map((ans) => {
                         // 4자리 PIN 주석 메타데이터 제거 후 순수 텍스트만 표시
                         const cleanContent = ans.content.replace(/<!--pin:[0-9]{4}-->/g, "").trim();
@@ -769,17 +809,19 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                             className={cn(
                               "rounded-xl p-3.5 border transition",
                               ans.is_mentor
-                                ? "bg-indigo-50/60 border-indigo-100"
-                                : "bg-slate-50/80 border-slate-200/80"
+                                ? "bg-indigo-50/60 dark:bg-indigo-950/40 border-indigo-100 dark:border-indigo-900/60"
+                                : "bg-slate-50/80 dark:bg-slate-800/50 border-slate-200/80 dark:border-slate-700"
                             )}
                           >
                             <div className="flex items-center justify-between text-xs mb-1.5">
                               <div className="flex items-center gap-1.5">
                                 {ans.is_mentor ? (
                                   <>
-                                    <span className="font-extrabold text-indigo-900 flex items-center gap-1">
-                                      <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                                      {ans.author_name}
+                                    <span className="font-extrabold text-indigo-900 dark:text-indigo-200 flex items-center gap-1">
+                                      <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                                      {ans.author_name === "SMP 전담 멘토"
+                                        ? (mentorName || "이진혁")
+                                        : (ans.author_name || mentorName || "이진혁")}
                                     </span>
                                     <span className="rounded-md bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
                                       멘토
@@ -787,25 +829,25 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                                   </>
                                 ) : (
                                   <>
-                                    <span className="font-bold text-slate-800 flex items-center gap-1">
-                                      <User className="w-3.5 h-3.5 text-slate-500" />
+                                    <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                                      <User className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                                       {ans.author_name}
                                     </span>
-                                    <span className="rounded-md bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                    <span className="rounded-md bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
                                       멘티
                                     </span>
                                   </>
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] text-slate-400">
+                                <span className="text-[10px] text-slate-400 dark:text-slate-500">
                                   {new Date(ans.created_at).toLocaleDateString()}
                                 </span>
                                 {(isMentor || !ans.is_mentor) && (
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteAnswer(ans, q)}
-                                    className="text-slate-400 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition active:scale-95"
+                                    className="text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 transition active:scale-95"
                                     title={isMentor ? "삭제 (멘토 권한)" : "댓글 삭제 (본인 확인 후 삭제)"}
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -816,7 +858,7 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                             <p
                               className={cn(
                                 "text-xs sm:text-sm whitespace-pre-wrap break-words leading-relaxed",
-                                ans.is_mentor ? "text-slate-800 font-medium" : "text-slate-700"
+                                ans.is_mentor ? "text-slate-800 dark:text-slate-100 font-medium" : "text-slate-700 dark:text-slate-300"
                               )}
                             >
                               {cleanContent}
@@ -830,7 +872,7 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                         <button
                           type="button"
                           onClick={() => toggleCommentsExpand(q.id)}
-                          className="w-full py-2 text-center text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50/60 rounded-xl transition flex items-center justify-center gap-1 border border-indigo-100/80 bg-slate-50/50"
+                          className="w-full py-2 text-center text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/50 rounded-xl transition flex items-center justify-center gap-1 border border-indigo-100/80 dark:border-indigo-900/60 bg-slate-50/50 dark:bg-slate-800/40"
                         >
                           {isCommentsExpanded ? (
                             <>
@@ -851,27 +893,27 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
 
                 {/* 멘티 전용: 댓글 작성 버튼 및 폼 */}
                 {!isMentor && hasAccess && (
-                  <div className="mt-3.5 pt-3 border-t border-slate-100">
+                  <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800">
                     {!activeCommentQuestionIds.has(q.id) ? (
                       <button
                         type="button"
                         onClick={() => toggleCommentBox(q.id)}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
                         <span>댓글 남기기</span>
                       </button>
                     ) : (
-                      <div className="rounded-2xl bg-slate-50/90 p-3.5 border border-slate-200/80 space-y-2.5 animate-in fade-in duration-150">
+                      <div className="rounded-2xl bg-slate-50/90 dark:bg-slate-800/60 p-3.5 border border-slate-200/80 dark:border-slate-700 space-y-2.5 animate-in fade-in duration-150">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                            <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                            <MessageSquare className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                             댓글 작성
                           </span>
                           <button
                             type="button"
                             onClick={() => toggleCommentBox(q.id)}
-                            className="text-slate-400 hover:text-slate-600 p-0.5 rounded transition"
+                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-0.5 rounded transition"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
@@ -884,7 +926,7 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                               value={commentInputMap[q.id]?.name || ""}
                               onChange={(e) => updateCommentInput(q.id, "name", e.target.value)}
                               placeholder="작성자 이름 / 닉네임 *"
-                              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs focus:border-indigo-500 outline-none transition"
+                              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 px-3 py-2 text-xs focus:border-indigo-500 outline-none transition"
                             />
                           </div>
                           <div>
@@ -893,12 +935,15 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                               inputMode="numeric"
                               pattern="[0-9]*"
                               maxLength={4}
+                              autoComplete="new-password"
+                              data-1p-ignore="true"
+                              data-lpignore="true"
                               value={commentInputMap[q.id]?.pin || ""}
                               onChange={(e) =>
                                 updateCommentInput(q.id, "pin", e.target.value.replace(/[^0-9]/g, ""))
                               }
                               placeholder="4자리 비밀번호 (PIN) *"
-                              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs tracking-widest font-mono focus:border-indigo-500 outline-none transition"
+                              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 px-3 py-2 text-center text-xs tracking-widest font-mono focus:border-indigo-500 outline-none transition"
                             />
                           </div>
                         </div>
@@ -908,14 +953,14 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                           value={commentInputMap[q.id]?.content || ""}
                           onChange={(e) => updateCommentInput(q.id, "content", e.target.value)}
                           placeholder="댓글이나 추가 질문을 입력해 주세요... (줄바꿈 가능)"
-                          className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs sm:text-sm focus:border-indigo-500 outline-none transition resize-y font-sans leading-relaxed"
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 p-2.5 text-xs sm:text-sm focus:border-indigo-500 outline-none transition resize-y font-sans leading-relaxed"
                         />
 
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
                             onClick={() => toggleCommentBox(q.id)}
-                            className="rounded-xl bg-slate-200/70 hover:bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition active:scale-95"
+                            className="rounded-xl bg-slate-200/70 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 transition active:scale-95"
                           >
                             취소
                           </button>
@@ -939,7 +984,7 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
 
                 {/* 멘토 전용: 공식 답변 작성 폼 (줄바꿈 가능 textarea) */}
                 {isMentor && (
-                  <div className="mt-4 pt-3 border-t border-slate-100">
+                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <div className="space-y-2">
                       <textarea
                         rows={3}
@@ -951,7 +996,7 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                           }))
                         }
                         placeholder="멘토 공식 답변을 작성해 주세요... (줄바꿈 가능)"
-                        className="w-full rounded-xl border border-slate-200 p-3 text-xs sm:text-sm focus:border-indigo-500 outline-none transition resize-y font-sans leading-relaxed"
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 p-3 text-xs sm:text-sm focus:border-indigo-500 outline-none transition resize-y font-sans leading-relaxed"
                       />
                       <div className="flex justify-end">
                         <button
@@ -989,17 +1034,17 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
       {/* 비밀글 잠금 해제 (이름 + PIN) 입력 모달 */}
       {pinModalTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100">
+                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50">
                   <Lock className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                     비밀글 본인 확인
                   </h3>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">
                     작성 시 등록한 이름과 비밀번호를 입력하세요
                   </p>
                 </div>
@@ -1007,15 +1052,15 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
               <button
                 type="button"
                 onClick={() => setPinModalTarget(null)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleVerifyPin} className="space-y-3.5">
+            <form onSubmit={handleVerifyPin} autoComplete="off" className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   작성자 이름 / 닉네임 <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
@@ -1024,16 +1069,17 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                     type="text"
                     required
                     autoFocus
+                    autoComplete="off"
                     value={inputAuthorName}
                     onChange={(e) => setInputAuthorName(e.target.value)}
                     placeholder="글 작성 시 입력한 이름"
-                    className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-xs sm:text-sm focus:border-indigo-500 outline-none transition"
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-9 pr-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 outline-none transition"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   4자리 비밀번호 (PIN) <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
@@ -1044,16 +1090,19 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                     pattern="[0-9]*"
                     maxLength={4}
                     required
+                    autoComplete="new-password"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
                     value={inputPin}
                     onChange={(e) => setInputPin(e.target.value.replace(/[^0-9]/g, ""))}
                     placeholder="4자리 숫자"
-                    className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-center text-xs sm:text-sm tracking-widest font-mono focus:border-indigo-500 outline-none transition"
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-9 pr-3 py-2 text-center text-xs sm:text-sm tracking-widest font-mono text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 outline-none transition"
                   />
                 </div>
               </div>
 
               {pinError && (
-                <div className="flex items-center gap-1.5 rounded-xl bg-rose-50 p-2.5 text-xs text-rose-600 font-medium border border-rose-100">
+                <div className="flex items-center gap-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 p-2.5 text-xs text-rose-600 dark:text-rose-400 font-medium border border-rose-100 dark:border-rose-900/40">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>{pinError}</span>
                 </div>
@@ -1063,7 +1112,7 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                 <button
                   type="button"
                   onClick={() => setPinModalTarget(null)}
-                  className="flex-1 rounded-xl bg-slate-100 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition active:scale-95"
+                  className="flex-1 rounded-xl bg-slate-100 dark:bg-slate-800 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition active:scale-95"
                 >
                   취소
                 </button>
@@ -1082,17 +1131,17 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
       {/* 내 질문 일괄 찾기 모달 */}
       {isFindModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100">
+                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50">
                   <Search className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                     내 질문 찾기
                   </h3>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">
                     작성자 이름과 4자리 비밀번호로 질문을 일괄 조회합니다
                   </p>
                 </div>
@@ -1100,15 +1149,15 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
               <button
                 type="button"
                 onClick={() => setIsFindModalOpen(false)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleFindMyQuestions} className="space-y-3.5">
+            <form onSubmit={handleFindMyQuestions} autoComplete="off" className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   작성자 이름 / 닉네임 <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
@@ -1117,16 +1166,17 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                     type="text"
                     required
                     autoFocus
+                    autoComplete="off"
                     value={findName}
                     onChange={(e) => setFindName(e.target.value)}
                     placeholder="글 작성 시 입력한 이름"
-                    className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-xs sm:text-sm focus:border-indigo-500 outline-none transition"
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-9 pr-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 outline-none transition"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   4자리 비밀번호 (PIN) <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
@@ -1137,16 +1187,19 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                     pattern="[0-9]*"
                     maxLength={4}
                     required
+                    autoComplete="new-password"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
                     value={findPin}
                     onChange={(e) => setFindPin(e.target.value.replace(/[^0-9]/g, ""))}
                     placeholder="4자리 숫자"
-                    className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-center text-xs sm:text-sm tracking-widest font-mono focus:border-indigo-500 outline-none transition"
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-9 pr-3 py-2 text-center text-xs sm:text-sm tracking-widest font-mono text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 outline-none transition"
                   />
                 </div>
               </div>
 
               {findError && (
-                <div className="flex items-center gap-1.5 rounded-xl bg-rose-50 p-2.5 text-xs text-rose-600 font-medium border border-rose-100">
+                <div className="flex items-center gap-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 p-2.5 text-xs text-rose-600 dark:text-rose-400 font-medium border border-rose-100 dark:border-rose-900/40">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>{findError}</span>
                 </div>
@@ -1156,7 +1209,7 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                 <button
                   type="button"
                   onClick={() => setIsFindModalOpen(false)}
-                  className="flex-1 rounded-xl bg-slate-100 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition active:scale-95"
+                  className="flex-1 rounded-xl bg-slate-100 dark:bg-slate-800 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition active:scale-95"
                 >
                   취소
                 </button>
@@ -1175,19 +1228,19 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
       {/* 멘티 본인 확인 삭제 모달 */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 border border-rose-100">
+                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50">
                   <Trash2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                     {deleteTarget.type === "question"
                       ? "질문 삭제"
                       : (deleteTarget.answer?.is_mentor ? "답변 삭제" : "댓글 삭제")}
                   </h3>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">
                     {deleteTarget.type === "question"
                       ? "질문 작성 시 등록한 이름과 비밀번호를 입력하세요"
                       : "댓글 작성 시 등록한 이름과 비밀번호를 입력하세요"}
@@ -1197,15 +1250,15 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
               <button
                 type="button"
                 onClick={() => setDeleteTarget(null)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleConfirmDelete} className="space-y-3.5">
+            <form onSubmit={handleConfirmDelete} autoComplete="off" className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   작성자 이름 / 닉네임 <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
@@ -1214,16 +1267,17 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                     type="text"
                     required
                     autoFocus
+                    autoComplete="off"
                     value={deleteName}
                     onChange={(e) => setDeleteName(e.target.value)}
                     placeholder="작성 시 입력한 이름"
-                    className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-xs sm:text-sm focus:border-rose-500 outline-none transition"
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-9 pr-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-rose-500 outline-none transition"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   4자리 비밀번호 (PIN) <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
@@ -1234,16 +1288,19 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                     pattern="[0-9]*"
                     maxLength={4}
                     required
+                    autoComplete="new-password"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
                     value={deletePin}
                     onChange={(e) => setDeletePin(e.target.value.replace(/[^0-9]/g, ""))}
                     placeholder="4자리 숫자"
-                    className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-center text-xs sm:text-sm tracking-widest font-mono focus:border-rose-500 outline-none transition"
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-9 pr-3 py-2 text-center text-xs sm:text-sm tracking-widest font-mono text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-rose-500 outline-none transition"
                   />
                 </div>
               </div>
 
               {deleteError && (
-                <div className="flex items-center gap-1.5 rounded-xl bg-rose-50 p-2.5 text-xs text-rose-600 font-medium border border-rose-100">
+                <div className="flex items-center gap-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 p-2.5 text-xs text-rose-600 dark:text-rose-400 font-medium border border-rose-100 dark:border-rose-900/40">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>{deleteError}</span>
                 </div>
@@ -1253,7 +1310,7 @@ export default function QuestionBoard({ sectionId, isMentor = false }: QuestionB
                 <button
                   type="button"
                   onClick={() => setDeleteTarget(null)}
-                  className="flex-1 rounded-xl bg-slate-100 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition active:scale-95"
+                  className="flex-1 rounded-xl bg-slate-100 dark:bg-slate-800 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition active:scale-95"
                 >
                   취소
                 </button>
