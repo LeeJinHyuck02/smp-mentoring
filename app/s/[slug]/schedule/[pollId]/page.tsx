@@ -270,11 +270,6 @@ export default function SchedulePage({
           >
             <Calendar className="w-4 h-4" />
             <span>내 가능 시간 선택</span>
-            {selectedSlots.length > 0 && (
-              <span className="rounded-full bg-indigo-100 dark:bg-indigo-950/60 px-2 py-0.5 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
-                {selectedSlots.length}
-              </span>
-            )}
           </button>
 
           <button
@@ -309,7 +304,7 @@ export default function SchedulePage({
                   <button
                     type="button"
                     onClick={() => setSelectedSlots([])}
-                    className="rounded-lg border border-slate-300 bg-white hover:bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 transition active:scale-95 flex items-center gap-0.5 whitespace-nowrap"
+                    className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:text-slate-200 transition active:scale-95 flex items-center gap-0.5 whitespace-nowrap"
                   >
                     <span>선택 초기화</span>
                   </button>

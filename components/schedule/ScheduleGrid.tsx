@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { formatTimeKorean, formatDayOrDateKorean, generateTimeSlots, isMentorBlockedSlot, cn } from "@/lib/utils";
-import { Check, Clock } from "lucide-react";
+import { Check } from "lucide-react";
 
 interface ScheduleGridProps {
   dates: string[]; // e.g. ["2026-09-15", "2026-09-16", ...]
@@ -182,25 +182,19 @@ export default function ScheduleGrid({
 
   return (
     <div className="w-full select-none" ref={gridRef}>
-      {/* 멘토 일정 안내 & 범례 */}
-      <div className="mb-3 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-xs text-slate-600 dark:text-slate-300 flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-1.5 font-medium">
-          <Clock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-          <span>
-            <strong>월~목 18시 이후</strong> · <strong>금 13시 이후</strong>
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-          <span className="inline-flex items-center gap-1">
+      {/* 범례 및 선택 초기화 바 */}
+      <div className="mb-3 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-3.5 py-2 text-xs text-slate-600 dark:text-slate-300 flex items-center justify-between gap-2 min-h-[38px]">
+        <div className="flex items-center gap-3 text-[11px] sm:text-xs text-slate-600 dark:text-slate-400">
+          <span className="inline-flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 inline-block" />
             멘토 불가
           </span>
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded bg-emerald-500 inline-block" />
             내 선택
           </span>
-          {headerAction && <div className="ml-1 shrink-0">{headerAction}</div>}
         </div>
+        {headerAction && <div className="shrink-0">{headerAction}</div>}
       </div>
 
       {/* 반응형 가로 스크롤 컨테이너 (모바일 5일 기준 가로 스크롤 없이 쏙 들어감) */}
